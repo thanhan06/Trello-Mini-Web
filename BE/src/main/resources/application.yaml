@@ -1,0 +1,21 @@
+server:
+  port: 8080
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/trello
+    driver-class-name: org.postgresql.Driver
+    username: trello
+    password: trello123
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
+    open-in-view: false
+
+jwt:
+  signerKey: "0645f07c4c20d9807354966a8ec4f82226e7f92845adc6ab8b9f59192d6cfa10"
+  valid-duration: 3600 # seconds
+  refreshable-duration: 36000 # seconds
