@@ -6,7 +6,11 @@ import lombok.experimental.FieldDefaults;
 
 import java.time.LocalDate;
 import java.util.Date;
+import java.util.Set;
 import java.util.UUID;
+import com.example.Trello_Mini.entity.UserWorkspace.UserWorkspaceEntity;
+import com.example.Trello_Mini.entity.Task.TaskEntity;
+
 @Entity
 @Table(name = "users")
 @Getter
@@ -33,4 +37,10 @@ public class UserEntity {
     String role;
 
     LocalDate dob;
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    Set<UserWorkspaceEntity> userWorkspaces;
+
+    @OneToMany(mappedBy = "assignedTo", cascade = CascadeType.ALL)
+    Set<TaskEntity> tasks;
 }

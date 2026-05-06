@@ -5,11 +5,15 @@ import com.example.Trello_Mini.dto.request.AuthenticationRequest;
 import com.example.Trello_Mini.dto.request.IntrospectRequest;
 import com.example.Trello_Mini.dto.response.AuthenticationResponse;
 import com.example.Trello_Mini.dto.response.IntrospectResponse;
+import com.example.Trello_Mini.entity.User.InvalidatedToken;
 import com.example.Trello_Mini.entity.User.UserEntity;
+import com.example.Trello_Mini.repository.User.InvalidatedTokenRepository;
 import com.example.Trello_Mini.repository.User.UserRepository;
 import com.nimbusds.jose.*;
 import com.nimbusds.jose.crypto.MACSigner;
+import com.nimbusds.jose.crypto.MACVerifier;
 import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.SignedJWT;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -21,18 +25,47 @@ import java.text.ParseException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
+import java.util.UUID;
+
 @Service
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class AuthenticationService {
     UserRepository userRepository;
+    InvalidatedTokenRepository invalidatedTokenRepository;
     PasswordEncoder passwordEncoder;
     @NonFinal
     @Value("${jwt.signerKey:quangvuong_signer_key_must_be_long_enough_to_be_secure_1234567890}")
     protected String SIGNER_KEY;
+
+    private SignedJWT verifyToken(String token) throws JOSEException, ParseException {
+        JWSVerifier verifier = new MACVerifier(SIGNER_KEY.getBytes());
+        SignedJWT signedJWT = SignedJWT.parse(token);
+
+        Date expiryTime = signedJWT.getJWTClaimsSet().getExpirationTime();
+        var verified = signedJWT.verify(verifier);
+
+        if (!(verified && expiryTime.after(new Date()))) {
+            throw new ApiException(ErrorCode.UNAUTHENTICATED);
+        }
+
+        if (invalidatedTokenRepository.existsById(signedJWT.getJWTClaimsSet().getJWTID())) {
+            throw new ApiException(ErrorCode.UNAUTHENTICATED);
+        }
+
+        return signedJWT;
+    }
+
     public IntrospectResponse introspect(IntrospectRequest request) throws JOSEException, ParseException {
-        // Mock introspection for now
-        return new IntrospectResponse(true);
+        var token = request.token();
+        boolean isValid = true;
+        try {
+            verifyToken(token);
+        } catch (ApiException e) {
+            isValid = false;
+        }
+
+        return new IntrospectResponse(isValid);
     }
     public AuthenticationResponse authenticate(AuthenticationRequest request) {
         var user = userRepository.findByEmail(request.getEmail())
@@ -54,6 +87,7 @@ public class AuthenticationService {
                 .issuer("trello-mini.com")
                 .issueTime(new Date())
                 .expirationTime(new Date(Instant.now().plus(1, ChronoUnit.HOURS).toEpochMilli()))
+                .jwtID(UUID.randomUUID().toString())
                 .claim("scope", user.getRole())
                 .build();
         Payload payload = new Payload(jwtClaimsSet.toJSONObject());
@@ -65,4 +99,21 @@ public class AuthenticationService {
             throw new RuntimeException(e);
         }
     }
+
+    public void logout(IntrospectRequest request) throws ParseException, JOSEException {
+        try {
+            var signToken = verifyToken(request.token());
+            String jit = signToken.getJWTClaimsSet().getJWTID();
+            Date expiryTime = signToken.getJWTClaimsSet().getExpirationTime();
+
+            InvalidatedToken invalidatedToken = InvalidatedToken.builder()
+                    .id(jit)
+                    .expiryTime(expiryTime)
+                    .build();
+
+            invalidatedTokenRepository.save(invalidatedToken);
+        } catch (ApiException e) {
+        }
+    }
+
 }

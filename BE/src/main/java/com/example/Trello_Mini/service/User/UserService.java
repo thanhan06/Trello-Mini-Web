@@ -5,6 +5,7 @@ import com.example.Trello_Mini.common.ErrorCode;
 import com.example.Trello_Mini.dto.request.UserRequestCreation;
 import com.example.Trello_Mini.dto.response.UserResponse;
 import com.example.Trello_Mini.entity.User.UserEntity;
+import com.example.Trello_Mini.mapper.User.UserMapper;
 import com.example.Trello_Mini.repository.User.UserRepository;
 import lombok.experimental.FieldDefaults;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -15,10 +16,12 @@ import org.springframework.stereotype.Service;
 public class UserService {
     UserRepository userRepository;
     PasswordEncoder passwordEncoder;
+    UserMapper userMapper;
 
-    UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, UserMapper userMapper) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.userMapper = userMapper;
     }
 
     public UserResponse createUser(UserRequestCreation userRequestCreation) {
@@ -28,17 +31,27 @@ public class UserService {
         }
 
         // Create new UserEntity from UserRequestCreation
-        UserEntity userEntity = new UserEntity();
-        userEntity.setName(userRequestCreation.getName());
-        userEntity.setEmail(userRequestCreation.getEmail());
+        UserEntity userEntity = userMapper.toUserEntity(userRequestCreation);
         userEntity.setPassword(passwordEncoder.encode(userRequestCreation.getPassword())); // Hash the password before saving
-        userEntity.setRole(userRequestCreation.getRole());
-        userEntity.setDob(userRequestCreation.getDob());
+        
         // Save the new user to the database
         UserEntity savedUser = userRepository.save(userEntity);
 
         // Convert saved UserEntity to UserResponse and return
-        return new UserResponse(savedUser.getId(), savedUser.getName(), savedUser.getEmail(), savedUser.getRole(), savedUser.getDob());
+        return userMapper.toUserResponse(savedUser);
+    }
+    
+    public UserResponse getUserById(String id) {
+        UserEntity userEntity = userRepository.findById(java.util.UUID.fromString(id))
+                .orElseThrow(() -> new ApiException(ErrorCode.USER_NOT_FOUND));
+        return userMapper.toUserResponse(userEntity);
+    }
+
+    public UserResponse getMyInfo(String email) {
+        UserEntity userEntity = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ApiException(ErrorCode.USER_NOT_FOUND));
+        return userMapper.toUserResponse(userEntity);
+
     }
 
 }

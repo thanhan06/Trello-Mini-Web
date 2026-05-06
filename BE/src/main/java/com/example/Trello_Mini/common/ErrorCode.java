@@ -12,6 +12,15 @@ public enum ErrorCode {
     CATEGORY_NOT_FOUND("CATEGORY_NOT_FOUND", HttpStatus.NOT_FOUND, "Category not found"),
     CATEGORY_NAME_EXISTS("CATEGORY_NAME_EXISTS", HttpStatus.CONFLICT, "Category name already exists"),
 
+    // WORKSPACE
+    WORKSPACE_NOT_FOUND("WORKSPACE_NOT_FOUND", HttpStatus.NOT_FOUND, "Workspace not found"),
+
+    // BOARD
+    BOARD_NOT_FOUND("BOARD_NOT_FOUND", HttpStatus.NOT_FOUND, "Board not found"),
+
+    // TASK
+    TASK_NOT_FOUND("TASK_NOT_FOUND", HttpStatus.NOT_FOUND, "Task not found"),
+
     // PRODUCT
     PRODUCT_NOT_FOUND("PRODUCT_NOT_FOUND", HttpStatus.NOT_FOUND, "Product not found"),
     PRODUCT_NAME_EXISTS("PRODUCT_NAME_EXISTS", HttpStatus.CONFLICT, "Product name already exists"),

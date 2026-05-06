@@ -10,19 +10,13 @@ import lombok.Setter;
 import lombok.experimental.FieldDefaults;
 
 import java.time.LocalDate;
-import java.util.Date;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @FieldDefaults(level = lombok.AccessLevel.PRIVATE)
-public class UserRequestCreation {
-    String name;
-    @Email(message = "Email should be valid")
-    String email;
+public class UserUpdationRequest {
     @Size(min = 8, max = 20, message = "INVALID_PASSWORD")
     String password;
-    @DobConstraint(min = 18, message = "INVALID_DOB")
-    LocalDate dob;
 }
