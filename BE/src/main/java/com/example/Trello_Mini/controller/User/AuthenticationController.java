@@ -3,6 +3,9 @@ import com.example.Trello_Mini.common.ApiResponse;
 import com.example.Trello_Mini.common.ApiResponses;
 import com.example.Trello_Mini.dto.request.AuthenticationRequest;
 import com.example.Trello_Mini.dto.request.IntrospectRequest;
+import com.example.Trello_Mini.dto.request.LogoutRequest;
+import com.example.Trello_Mini.dto.request.RefreshRequest;
+import com.example.Trello_Mini.dto.request.GoogleLoginRequest;
 import com.example.Trello_Mini.dto.response.AuthenticationResponse;
 import com.example.Trello_Mini.dto.response.IntrospectResponse;
 import com.example.Trello_Mini.service.User.AuthenticationService;
@@ -32,9 +35,16 @@ public class AuthenticationController {
         return ApiResponses.ok(httpReq, authenticationService.authenticate(request));
     }
 
+    @PostMapping("/google")
+    public ResponseEntity<ApiResponse<AuthenticationResponse>> googleLogin(
+            @RequestBody GoogleLoginRequest request,
+            HttpServletRequest httpReq) throws Exception {
+        return ApiResponses.ok(httpReq, authenticationService.authenticateWithGoogle(request));
+    }
+
     @PostMapping("/logout")
     public ResponseEntity<ApiResponse<String>> logout(
-            @RequestBody IntrospectRequest token,
+            @RequestBody LogoutRequest token,
             HttpServletRequest httpReq) throws ParseException, JOSEException {
         authenticationService.logout(token);
         return ApiResponses.ok(httpReq, "Logged out successfully");
@@ -45,5 +55,12 @@ public class AuthenticationController {
             @RequestBody IntrospectRequest token,
             HttpServletRequest httpReq) throws ParseException, JOSEException {
         return ApiResponses.ok(httpReq, authenticationService.introspect(token));
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<ApiResponse<AuthenticationResponse>> refreshToken(
+            @RequestBody RefreshRequest request,
+            HttpServletRequest httpReq) throws ParseException, JOSEException {
+        return ApiResponses.ok(httpReq, authenticationService.refreshToken(request));
     }
 }

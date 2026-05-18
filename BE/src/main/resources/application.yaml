@@ -2,6 +2,10 @@ server:
   port: 8080
 
 spring:
+  data:
+    redis:
+      host: localhost
+      port: 6379
   datasource:
     url: jdbc:postgresql://localhost:5432/trello
     driver-class-name: org.postgresql.Driver
@@ -19,3 +23,8 @@ jwt:
   signerKey: "0645f07c4c20d9807354966a8ec4f82226e7f92845adc6ab8b9f59192d6cfa10"
   valid-duration: 3600 # seconds
   refreshable-duration: 36000 # seconds
+
+google:
+  client:
+    id: "872634046079-fs1vat59lffpjjesa1jaempbabt07t0s.apps.googleusercontent.com"
+    secret: "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"
