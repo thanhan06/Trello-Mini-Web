@@ -87,3 +87,30 @@ Khi đó:
 - Và nhớ: nếu chưa đăng ký user thì sẽ luôn vào nhánh throw.
 
 Nếu bạn chụp 5–10 dòng quanh đoạn `var user = ...` trong `AuthenticationServiceImpl.authenticate`, mình chỉ bạn chính xác nên đặt breakpoint ở dòng nào để chắc chắn nhìn được `user` (kể cả case “không tìm thấy user”).
+Mình sẽ tìm trong workspace file cấu hình debug (thường là launch.json) để chỉ đúng đường dẫn và chỗ bạn cần sửa port/attach.
+
+Searched for files matching `**/.vscode/launch.json`, no matches
+
+Không thấy `launch.json` bằng glob; mình sẽ liệt kê thư mục BE để xem có .vscode không, rồi chỉ bạn tạo/đặt file ở đúng chỗ.
+
+Read [](file:///c%3A/Users/ADMIN/Desktop/workspace/Learn/Trello-Mini-Web/BE)
+
+Read [](file:///c%3A/Users/ADMIN/Desktop/workspace/Learn/Trello-Mini-Web/BE/.vscode)
+
+Read [](file:///c%3A/Users/ADMIN/Desktop/workspace/Learn/Trello-Mini-Web/BE/.vscode/launch.json)
+
+File config debug của VS Code nằm ở:
+- ​.vscode/launch.json
+
+Trong file đó bạn đang có cấu hình attach như này:
+- `type: "java"`, `request: "attach"`
+- `hostName: "localhost"`
+- `port: 5005`
+
+Cách dùng nhanh:
+- Chạy app với debug port 5005 (JDWP), ví dụ:  
+  `.mvnw.cmd spring-boot:run -D"spring-boot.run.jvmArguments=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005"`
+- Trong VS Code → tab Run and Debug → chọn “Attach to Spring Boot (5005)” → Start
+- Đặt breakpoint trực tiếp trong các file Java (controller/service) rồi gọi API để nó dừng.
+
+Nếu máy bạn dùng `127.0.0.1` thay vì `localhost` thì có thể đổi `hostName` trong ​.vscode/launch.json thành `127.0.0.1` (port vẫn 5005).
