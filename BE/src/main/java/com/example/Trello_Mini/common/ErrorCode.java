@@ -24,9 +24,14 @@ public enum ErrorCode {
     // PRODUCT
     PRODUCT_NOT_FOUND("PRODUCT_NOT_FOUND", HttpStatus.NOT_FOUND, "Product not found"),
     PRODUCT_NAME_EXISTS("PRODUCT_NAME_EXISTS", HttpStatus.CONFLICT, "Product name already exists"),
+    PRODUCT_TYPE_NOT_FOUND("PRODUCT_TYPE_NOT_FOUND", HttpStatus.NOT_FOUND, "Product type not found"),
+
+    // ORDER
+    ORDER_NOT_FOUND("ORDER_NOT_FOUND", HttpStatus.NOT_FOUND, "Order not found"),
 
     // USER / ROLE
     USER_NOT_FOUND("USER_NOT_FOUND", HttpStatus.NOT_FOUND, "User not found"),
+    MSTUSER_NOT_FOUND("MSTUSER_NOT_FOUND", HttpStatus.NOT_FOUND, "MstUser not found"),
     ROLE_NOT_FOUND("ROLE_NOT_FOUND", HttpStatus.NOT_FOUND, "Role not found"),
     USER_ROLE_EXISTS("USER_ROLE_EXISTS", HttpStatus.CONFLICT, "User already has this role"),
     USER_ROLE_NOT_FOUND("USER_ROLE_NOT_FOUND", HttpStatus.NOT_FOUND, "User does not have this role"),

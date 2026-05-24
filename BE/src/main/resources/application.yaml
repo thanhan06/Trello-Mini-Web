@@ -11,7 +11,11 @@ spring:
     driver-class-name: org.postgresql.Driver
     username: trello
     password: trello123
+  sql:
+    init:
+      mode: always
   jpa:
+    defer-datasource-initialization: true
     hibernate:
       ddl-auto: update
     properties:

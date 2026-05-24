@@ -33,24 +33,28 @@ public class SercurityConfig {
             "/auth/refresh"
     };
 
-	@Bean
-	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-		http
-				.cors(Customizer.withDefaults())
-				.csrf(AbstractHttpConfigurer::disable)
-				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-				.authorizeHttpRequests(auth -> auth
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http
+                .cors(Customizer.withDefaults())
+                .csrf(AbstractHttpConfigurer::disable)
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.GET, "/", "/index", "/index.html").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/shop/product-list").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/productlist").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/shop/products", "/shop/products/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/shop/product-types", "/shop/product-types/**").permitAll()
+                        .requestMatchers("/bootstrap/**", "/css/**", "/js/**", "/img/**", "/favicon.ico").permitAll()
                         .requestMatchers(HttpMethod.GET, "/css/**", "/js/**", "/images/**").permitAll()
                         .requestMatchers(HttpMethod.POST, PUBLIC_ENDPOINTS).permitAll()
-						.requestMatchers("/error").permitAll()
-						.anyRequest().authenticated())
-                .oauth2ResourceServer(oauth2 ->
-                        oauth2.jwt(jwtConfigurer -> jwtConfigurer.jwtAuthenticationConverter(jwtAuthenticationConverter()))
-                );
+                        .requestMatchers("/error").permitAll()
+                        .anyRequest().authenticated())
+                .oauth2ResourceServer(oauth2 -> oauth2
+                        .jwt(jwtConfigurer -> jwtConfigurer.jwtAuthenticationConverter(jwtAuthenticationConverter())));
 
-		return http.build();
-	}
+        return http.build();
+    }
 
     @Bean
     JwtAuthenticationConverter jwtAuthenticationConverter() {
@@ -62,6 +66,7 @@ public class SercurityConfig {
 
         return jwtAuthenticationConverter;
     }
+
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();

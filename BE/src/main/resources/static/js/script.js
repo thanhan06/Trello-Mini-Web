@@ -59,7 +59,10 @@ document.addEventListener('DOMContentLoaded', () => {
 			if (data?.accessToken) localStorage.setItem('accessToken', data.accessToken);
 			if (data?.refreshToken) localStorage.setItem('refreshToken', data.refreshToken);
 
-			setError('Đăng nhập thành công');
+			setError('Đăng nhập thành công. Đang chuyển hướng...');
+			setTimeout(() => {
+				window.location.href = '/productlist';
+			}, 1000);
 		} catch (err) {
 			setError(err instanceof Error ? err.message : 'Đăng nhập thất bại');
 		}

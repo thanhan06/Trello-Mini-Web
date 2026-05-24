@@ -8,8 +8,8 @@ import com.example.Trello_Mini.dto.request.RefreshRequest;
 import com.example.Trello_Mini.dto.request.GoogleLoginRequest;
 import com.example.Trello_Mini.dto.response.AuthenticationResponse;
 import com.example.Trello_Mini.dto.response.IntrospectResponse;
-import com.example.Trello_Mini.entity.User.UserEntity;
-import com.example.Trello_Mini.repository.User.UserRepository;
+import com.example.Trello_Mini.entity.Shop.MstUserEntity;
+import com.example.Trello_Mini.repository.Shop.MstUserRepository;
 import com.nimbusds.jose.*;
 import com.nimbusds.jose.crypto.MACSigner;
 import com.nimbusds.jose.crypto.MACVerifier;
@@ -43,7 +43,7 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class AuthenticationServiceImpl implements AuthenticationService {
-    UserRepository userRepository;
+    MstUserRepository userRepository;
     StringRedisTemplate redisTemplate;
     PasswordEncoder passwordEncoder;
     @NonFinal
@@ -91,7 +91,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     
     @Override
     public AuthenticationResponse authenticate(AuthenticationRequest request) {
-        var user = userRepository.findByEmail(request.getEmail())
+        var user = userRepository.findByUsername(request.getEmail())
                 .orElseThrow(() -> new ApiException(ErrorCode.USER_NOT_FOUND));
         boolean authenticated = passwordEncoder.matches(request.getPassword(), user.getPassword());
         if (!authenticated) {
@@ -123,13 +123,12 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             String email = payload.getEmail();
             String name = (String) payload.get("name");
 
-            UserEntity user = userRepository.findByEmail(email).orElse(null);
+            MstUserEntity user = userRepository.findByUsername(email).orElse(null);
             if (user == null) {
-                user = new UserEntity();
-                user.setEmail(email);
-                user.setName(name != null ? name : email);
+                user = new MstUserEntity();
+                user.setUsername(email);
                 user.setPassword(""); 
-                user.setRole("USER");
+                user.setRole((short) 0); // defaulting to user role
                 user = userRepository.save(user);
             }
 
@@ -145,15 +144,15 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         }
     }
     
-    private String generateToken(UserEntity user) {
+    private String generateToken(MstUserEntity user) {
         JWSHeader header = new JWSHeader(JWSAlgorithm.HS512);
         JWTClaimsSet jwtClaimsSet = new JWTClaimsSet.Builder()
-                .subject(user.getEmail())
+                .subject(user.getUsername())
                 .issuer("trello-mini.com")
                 .issueTime(new Date())
                 .expirationTime(new Date(Instant.now().plus(1, ChronoUnit.HOURS).toEpochMilli()))
                 .jwtID(UUID.randomUUID().toString())
-                .claim("scope", user.getRole())
+                .claim("scope", "ROLE_" + user.getRole())
                 .build();
         Payload payload = new Payload(jwtClaimsSet.toJSONObject());
         JWSObject jwsObject = new JWSObject(header, payload);
@@ -165,10 +164,10 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         }
     }
 
-    private String generateRefreshToken(UserEntity user) {
+    private String generateRefreshToken(MstUserEntity user) {
         JWSHeader header = new JWSHeader(JWSAlgorithm.HS512);
         JWTClaimsSet jwtClaimsSet = new JWTClaimsSet.Builder()
-                .subject(user.getEmail())
+                .subject(user.getUsername())
                 .issuer("trello-mini.com")
                 .issueTime(new Date())
                 .expirationTime(new Date(Instant.now().plus(7, ChronoUnit.DAYS).toEpochMilli()))
@@ -197,7 +196,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         }
 
         String email = signToken.getJWTClaimsSet().getSubject();
-        var user = userRepository.findByEmail(email)
+        var user = userRepository.findByUsername(email)
                 .orElseThrow(() -> new ApiException(ErrorCode.UNAUTHENTICATED));
 
         var token = generateToken(user);

@@ -144,3 +144,156 @@ Dưới đây là các thay đổi của cơ sở dữ liệu đã được chuy
 * **Thuộc tính `total_price**`: Chúng tôi nhận thấy đơn hàng đang thiếu trường dữ liệu lưu trữ tổng số tiền khách cần thanh toán. Hướng giải quyết là thêm mới trường `total_price` kiểu `integer`, giá trị sẽ được tính toán tự động bằng công thức: `unit_price` × `order_product_amount`.
 * **Thuộc tính `order_status**`: Chúng tôi nhận thấy luồng vận hành hiện không có cách nào để theo dõi được vòng đời của đơn hàng (ví dụ: đang chờ, đã xác nhận, đã giao...). Hướng giải quyết là thêm mới trường `order_status` kiểu `varchar` để quản lý các trạng thái này.
 * **Thuộc tính `order_product_amount**`: Chúng tôi nhận thấy trường dữ liệu này ở thiết kế gốc (`order_product_amout`) đã bị viết sai lỗi chính tả. Hướng giải quyết là đổi lại tên cột thành `order_product_amount` cho đúng chuẩn.
+
+
+Với mô hình MVC (Spring Boot + Thymeleaf), luồng tìm kiếm + phân trang sẽ như sau:
+
+**Controller** nhận params từ URL, gọi Service, trả về Model:
+
+```java
+@GetMapping("/product-list")
+public String productList(
+        @RequestParam(defaultValue = "") String name,
+        @RequestParam(defaultValue = "") String type,
+        @RequestParam(defaultValue = "") String desc,
+        @RequestParam(defaultValue = "1") int page,
+        @RequestParam(defaultValue = "10") int size,
+        Model model) {
+
+    Page<Product> result = productService.search(name, type, desc, page, size);
+
+    model.addAttribute("products", result.getContent());
+    model.addAttribute("productTypes", productTypeService.findAll());
+    model.addAttribute("currentPage", page);
+    model.addAttribute("totalPages", result.getTotalPages());
+    model.addAttribute("pageSize", size);
+
+    return "product-list";
+}
+```
+
+**Service** gọi Repository với điều kiện lọc:
+
+```java
+public Page<Product> search(String name, String type, String desc, int page, int size) {
+    Pageable pageable = PageRequest.of(page - 1, size);
+    return productRepository.search(
+        name.isEmpty() ? null : name,
+        type.isEmpty() ? null : type,
+        desc.isEmpty() ? null : desc,
+        pageable
+    );
+}
+```
+
+**Repository** dùng `@Query` JPQL hoặc `Specification`:
+
+```java
+// Cách 1: @Query JPQL
+@Query("""
+    SELECT p FROM Product p
+    WHERE (:name IS NULL OR LOWER(p.productName) LIKE LOWER(CONCAT('%', :name, '%')))
+      AND (:type IS NULL OR p.productType.id = :type)
+      AND (:desc IS NULL OR LOWER(p.description) LIKE LOWER(CONCAT('%', :desc, '%')))
+""")
+Page<Product> search(
+    @Param("name") String name,
+    @Param("type") String type,
+    @Param("desc") String desc,
+    Pageable pageable
+);
+```
+
+```java
+// Cách 2: Specification (linh hoạt hơn)
+public Page<Product> search(String name, String type, String desc, int page, int size) {
+    Specification<Product> spec = Specification.where(null);
+
+    if (name != null && !name.isEmpty())
+        spec = spec.and((root, q, cb) ->
+            cb.like(cb.lower(root.get("productName")), "%" + name.toLowerCase() + "%"));
+
+    if (type != null && !type.isEmpty())
+        spec = spec.and((root, q, cb) ->
+            cb.equal(root.get("productType").get("id"), type));
+
+    if (desc != null && !desc.isEmpty())
+        spec = spec.and((root, q, cb) ->
+            cb.like(cb.lower(root.get("description")), "%" + desc.toLowerCase() + "%"));
+
+    return productRepository.findAll(spec, PageRequest.of(page - 1, size));
+}
+```
+
+**Luồng tổng quát:**
+
+```
+Browser gõ URL: /shop/product-list?name=samsung&type=1&page=2
+        ↓
+Controller nhận params → gọi Service
+        ↓
+Service build query → gọi Repository
+        ↓
+Repository truy vấn DB → trả về Page<Product>
+        ↓
+Controller đưa vào Model → Thymeleaf render HTML
+        ↓
+HTML hiển thị đúng điều kiện search + trang hiện tại
+```
+
+Bạn đang dùng `@Query` hay `Specification`? Và entity/repository của bạn đang có cấu trúc thế nào để tôi giúp viết cụ thể hơn.
+
+Checked terminal output
+
+Tôi lấy được đúng `username` của hệ thống dùng để hiển thị trên trình duyệt là nhờ ba thành phần chính làm việc kết nối với nhau:
+
+**1. Context của Spring Security (`UserDetails`)**
+
+*   Trong `ProductListPageController`, bạn có tham số `@AuthenticationPrincipal UserDetails userDetails`.
+*   Vì bạn đã đăng nhập và được cấp phát một JWT token, Spring Security sẽ parse cái token này ở `CustomJwtDecoder` hoặc Filter, sau đó tạo ra một `Authentication` context có chứa `UserDetails`.
+*   Trường `sub` (subject) trong JWT token (hoặc do bạn set từ `AuthenticationServiceImpl`) chính là `username`. Đây là lý do `userDetails.getUsername()` lấy ra đúng `username` (vd: `nguyenvan` hoặc `admin001`).
+
+**2. Lấy thông tin từ cơ sở dữ liệu (Bảng `mstuser`)**
+
+*   Sau khi biết chuỗi "username" từ token (phía trên), tôi sử dụng câu lệnh: `var user = mstUserService.getByUsername(username);` trong controller.
+*   Cái này sẽ tìm kiếm trong bảng `mstuser` giá trị khớp với `username` và trả về `UserResponse`.
+*   Dựa vào `user` tìm được, tôi trích xuất giá trị ra bằng `user.getUsername()`.
+
+**3. Render vào Thymeleaf**
+
+*   Kế đến, đoạn code gán vào HTTP Request scope dùng `Model`:
+    ```java
+    model.addAttribute("username", user.getUsername());
+    model.addAttribute("displayName", user.getUsername());
+    ```
+*   Ở trang Template `listproduct.html`, nó sẽ đọc model attribute này thông qua syntax của Thymeleaf:
+    ```html
+    <strong id="helloUser" th:text="${username}">abc-xyz</strong>
+    ```
+Vì vậy, HTML trả về sẽ đè giá trị "abc-xyz" bằng chuẩn cái username được xử lý.
+
+Tóm lại, logic là **Đăng nhập (lấy `mstuser.username` lưu vào Token) -> Spring Security lấy String Username ra từ Token -> Lấy user đó trên Database lần nữa -> Hiển thị nó qua Thymeleaf**. Bạn còn thắc mắc chỗ nào không nhỉ?
+
+
+Dưới đây là phần giải thích chi tiết bằng tiếng Việt về nguyên nhân gây ra lỗi và cách khắc phục:
+
+### Nguyên nhân gây ra lỗi:
+1. **Lỗi `lower(bytea)` trong PostgreSQL:** Khi bạn sử dụng câu lệnh có chứa tham số và kiểm tra giá trị null (ví dụ: `:name IS NULL`), nếu tham số `:name` được truyền vào là `null`, driver (trình quản lý kết nối) JDBC của PostgreSQL sẽ không gán được kiểu dữ liệu cụ thể cho nó và mặc định coi nó là kiểu **`bytea`** (một kiểu dữ liệu nhị phân - binary). 
+2. Sau đó, tham số `bytea` này lại được đưa vào hàm `LOWER(...)`, mà PostgreSQL thì không hỗ trợ hàm `LOWER()` cho dữ liệu nhị phân. Do đó, hệ quản trị cơ sở dữ liệu sẽ báo lỗi: *function lower(bytea) does not exist* (hàm lower cho bytea không tồn tại).
+
+### Cách đã khắc phục:
+
+1. **Xử lý chuỗi ngay trong code Java (tầng Service):** 
+   Thay vì để hệ quản trị cơ sở dữ liệu tự nối chuỗi (ví dụ: dùng `CONCAT('%', :name, '%')` trong SQL), chúng ta đã chuyển việc nối chuỗi `%` và chuyển sang chữ thường (lowercase) vào trong code Java (ProductServiceImpl.java).
+   ```java
+   String namePram  = (name != null && !name.isBlank()) ? "%" + name.toLowerCase() + "%" : null;
+   String descParam = (desc != null && !desc.isBlank()) ? "%" + desc.toLowerCase() + "%" : null;
+   ```
+
+2. **Ép kiểu dữ liệu (Casting) rõ ràng trong Repository:**
+   Trong file MstProductRepository.java, câu truy vấn JPQL đã được viết lại, thay vì gọi `(:name IS NULL)`, chúng ta dùng `cast(:name as text)`. Điều này giúp nói rõ cho PostgreSQL biết rằng tham số này luôn luôn là kiểu chuỗi văn bản (`text`), kể cả khi giá trị của nó là `null` đi chăng nữa. Từ đó, Postgres sẽ không tự chuyển nó thành kiểu nhị phân `bytea` nữa.
+   ```java
+   WHERE (cast(:name as text) IS NULL OR LOWER(p.productName) LIKE cast(:name as text))
+   ```
+
+Nhờ hai thay đổi này, Hibernate sẽ sinh ra câu SQL an toàn hơn, và PostgreSQL sẽ hiểu chính xác kiểu dữ liệu, giải quyết triệt để lỗi khi bạn tìm kiếm sản phẩm.

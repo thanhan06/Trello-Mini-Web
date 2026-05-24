@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Danh sách sản phẩm</title>
+
+    <link rel="stylesheet" th:href="@{/css/style.css}" />
+    <link rel="stylesheet" th:href="@{/bootstrap/css/bootstrap.min.css}" />
+
+    <script th:inline="javascript"></script>
+    <script defer th:src="@{/js/product-list.js}"></script>
+    <script defer th:src="@{/bootstrap/js/bootstrap.bundle.min.js}"></script>
+
+    <style>
+      body { background-color: #a8e6ef !important; }
+      .search-bar { background-color: #ffff00; }
+      .btn-search { background-color: #d0d0d0; border: 1px solid #888; color: #000; }
+      .user-info { color: #cc0000; }
+      .btn-logout { color: #000; text-decoration: underline; background: none; border: none; cursor: pointer; }
+      .pag-btn { background-color: #d0d0d0; border: 1px solid #888; color: #000; padding: 2px 8px; text-decoration: none; font-size: 0.9rem; }
+      .pag-btn.disabled { color: #aaa; pointer-events: none; }
+      table { table-layout: fixed; width: 100%; }
+      thead th { background-color: #00e600 !important; color: #000 !important; padding: 10px 8px !important; font-size: 1rem; overflow: hidden; }
+      tbody td { font-size: 0.95rem; vertical-align: middle; overflow: hidden; word-break: break-word; }
+      tbody td img { display: block; width: 70px; height: 70px; object-fit: cover; }
+      tbody td input.qty-input { height: 36px; font-size: 0.95rem; width: 100%; }
+    </style>
+  </head>
+  <body>
+
+    <!-- Navbar: username/displayName lấy từ model (controller đã set qua UserDetails) -->
+    <div class="d-flex justify-content-end align-items-center gap-3 px-3 py-2">
+      <span class="user-info">Xin chào, <strong id="helloUser" th:text="${username}"></strong></span>
+      <span class="user-info" id="displayName" th:text="${displayName}"></span>
+      <button class="btn-logout" id="logoutLink">Đăng xuất</button>
+    </div>
+
+    <div class="container-fluid px-3">
+
+      <h1 class="fs-4 fw-bold mb-2">Danh sách sản phẩm</h1>
+
+      <!-- Search bar: dùng form GET, submit tự build URL, reset page=1 -->
+      <form th:action="@{/shop/product-list}" method="get" class="search-bar px-2 py-2 mb-2">
+        <input type="hidden" name="page" value="1" />
+        <input type="hidden" name="size" th:value="${pageSize}" />
+        <div class="row g-2 align-items-center">
+          <div class="col-auto">
+            <label for="qName" class="col-form-label">Tên sản phẩm</label>
+          </div>
+          <div class="col-auto">
+            <input id="qName" name="name" type="text" class="form-control form-control-sm"
+                   th:value="${searchName}" />
+          </div>
+
+          <div class="col-auto" style="margin-left: 30px;">
+            <label for="qType" class="col-form-label">Loại sản phẩm</label>
+          </div>
+          <div class="col-auto">
+            <select id="qType" name="type" class="form-select form-select-sm">
+              <option value="" th:selected="${searchType == null or searchType == ''}">-- Tất cả --</option>
+              <option
+                th:each="type : ${productTypes}"
+                th:value="${type.producttypeId}"
+                th:text="${type.name}"
+                th:selected="${searchType != null and searchType == type.producttypeId.toString()}"
+              ></option>
+            </select>
+          </div>
+
+          <div class="col-auto" style="margin-left: 30px;">
+            <label for="qDesc" class="col-form-label">Mô tả</label>
+          </div>
+          <div class="col-auto" style="width: 300px;">
+            <input id="qDesc" name="desc" type="text" class="form-control form-control-sm"
+                   th:value="${searchDesc}" />
+          </div>
+
+          <div class="col-auto ms-auto">
+            <button type="submit" class="btn btn-search btn-sm">Tìm kiếm</button>
+          </div>
+        </div>
+      </form>
+
+      <!-- Pagination: dùng searchName/Type/Desc từ model để giữ điều kiện khi chuyển trang -->
+      <div th:if="${totalPages > 0}" class="d-flex justify-content-between align-items-center mb-2">
+        <div class="d-flex align-items-center gap-1">
+          <a class="pag-btn" th:classappend="${currentPage <= 1} ? ' disabled'"
+             th:href="@{/shop/product-list(page=1, size=${pageSize}, name=${searchName}, type=${searchType}, desc=${searchDesc})}">&laquo;</a>
+          <a class="pag-btn" th:classappend="${currentPage <= 1} ? ' disabled'"
+             th:href="@{/shop/product-list(page=${currentPage > 1 ? currentPage - 1 : 1}, size=${pageSize}, name=${searchName}, type=${searchType}, desc=${searchDesc})}">&lsaquo;</a>
+          <span class="ms-1">Previous</span>
+        </div>
+        <div class="d-flex align-items-center gap-1">
+          <span class="me-1">Next</span>
+          <a class="pag-btn" th:classappend="${currentPage >= totalPages} ? ' disabled'"
+             th:href="@{/shop/product-list(page=${currentPage < totalPages ? currentPage + 1 : totalPages}, size=${pageSize}, name=${searchName}, type=${searchType}, desc=${searchDesc})}">&rsaquo;</a>
+          <a class="pag-btn" th:classappend="${currentPage >= totalPages} ? ' disabled'"
+             th:href="@{/shop/product-list(page=${totalPages}, size=${pageSize}, name=${searchName}, type=${searchType}, desc=${searchDesc})}">&raquo;</a>
+        </div>
+      </div>
+
+      <!-- Table -->
+      <table class="table table-bordered mb-2">
+        <thead>
+          <tr>
+            <th style="width:6%">No.</th>
+            <th style="width:13%">Hình ảnh</th>
+            <th style="width:22%">Tên sản phẩm</th>
+            <th style="width:45%">Mô tả</th>
+            <th style="width:14%">Số lượng</th>
+          </tr>
+        </thead>
+        <tbody id="productTbody">
+          <tr th:each="product, stat : ${products}">
+            <td th:text="${stat.index + 1 + (currentPage - 1) * pageSize}"></td>
+            <td>
+              <img
+                th:if="${product.productImg != null}"
+                th:src="${product.productImg}"
+                alt="img"
+              />
+            </td>
+            <td th:text="${product.productName}"></td>
+            <td th:text="${product.description}"></td>
+            <td>
+              <input type="number" class="form-control form-control-sm qty-input"
+                     min="0"
+                     th:data-id="${product.productId}"
+                     th:data-max="${product.productAmount}"
+                     th:data-name="${product.productName}"
+                     th:data-status="${product.status}"
+                     placeholder="" />
+            </td>
+          </tr>
+          <tr th:if="${#lists.isEmpty(products)}">
+            <td colspan="5" class="text-center text-muted py-3">Không tìm thấy sản phẩm nào.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Đặt hàng -->
+      <div class="d-flex align-items-center gap-3">
+        <button type="button" id="btnOrder" class="btn btn-sm" style="background-color:#d0d0d0; border:1px solid #888;">Đặt hàng</button>
+        <span id="statusText" class="text-danger fw-bold"></span>
+      </div>
+
+    </div>
+
+    <script>
+      // ── Đặt hàng: validate số lượng ──
+      document.getElementById('btnOrder').addEventListener('click', function () {
+        const statusText = document.getElementById('statusText');
+        const inputs = document.querySelectorAll('.qty-input');
+        const errors = [];
+
+        // Chỉ xét các sản phẩm enable (status = false theo DB)
+        const enabledInputs = Array.from(inputs).filter(function (input) {
+          return input.dataset.status === 'false';
+        });
+
+        // Kiểm tra có ít nhất 1 ô enable được nhập số lượng > 0
+        const hasAnyQty = enabledInputs.some(function (input) {
+          const val = parseInt(input.value, 10);
+          return input.value && !isNaN(val) && val > 0;
+        });
+
+        if (!hasAnyQty) {
+          statusText.textContent = 'Vui lòng nhập số lượng cho ít nhất một sản phẩm.';
+          return;
+        }
+
+        enabledInputs.forEach(function (input) {
+          input.classList.remove('is-invalid');
+          const val = parseInt(input.value, 10);
+          const max = parseInt(input.dataset.max, 10);
+          const name = input.dataset.name;
+
+          if (!input.value || isNaN(val) || val <= 0) return;
+
+          if (val > max) {
+            errors.push('"' + name + '": đã nhập ' + val + ', tồn kho chỉ còn ' + max);
+            input.classList.add('is-invalid');
+          }
+        });
+
+        if (errors.length > 0) {
+          statusText.innerHTML = 'Số lượng vượt tồn kho:<br>' + errors.join('<br>');
+        } else {
+          statusText.textContent = '';
+          // TODO: xử lý đặt hàng
+        }
+      });
+    </script>
+
+  </body>
+</html>

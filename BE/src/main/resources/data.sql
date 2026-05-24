@@ -1,9 +1,16 @@
+-- Seed data for local testing (PostgreSQL)
+-- Notes:
+-- - Entity mappings use BOOLEAN for status columns, so use true/false (not 0/1)
+-- - mstuser.username is VARCHAR(8) in current entity mapping
+
+
+
 -- mstuser
 INSERT INTO mstuser (psn_cd, user_id, username, password, role, status, createtime, create_psn_cd, updatetime, update_psn_cd)
 VALUES
-(1, 'admin001', 'admin001', '$2a$10$hashedpassword1', 1, false, NOW(), 1, NOW(), 1),
-(2, 'nv000001', 'nguyenvan', '$2a$10$hashedpassword2', 2, false, NOW(), 1, NOW(), 1),
-(3, 'nv000002', 'tranthib', '$2a$10$hashedpassword3', 2, false, NOW(), 1, NOW(), 1)
+(1, 'admin01', 'admin01', '$2a$10$hashedpassword1', 1, false, NOW(), 1, NOW(), 1),
+(2, 'nv00001', 'nguyenva', '$2a$10$hashedpassword2', 2, false, NOW(), 1, NOW(), 1),
+(3, 'nv00002', 'tranthi', '$2a$10$hashedpassword3', 2, false, NOW(), 1, NOW(), 1)
 ON CONFLICT (psn_cd) DO NOTHING;
 
 -- mstproducttype
@@ -16,7 +23,7 @@ VALUES
 (5, 'Điện thoại', false, NOW(), 1, NOW(), 1)
 ON CONFLICT (producttype_id) DO NOTHING;
 
--- mstproduct (20 dòng)
+-- mstproduct (20 rows)
 INSERT INTO mstproduct (product_id, product_name, status, description, product_img, product_amount, price, producttype_id, createtime, create_user, updatetime, update_user)
 VALUES
 (1,  'Samsung Smart TV 55"',           false, 'Tivi Samsung 4K 55 inch',            '/img/product/tv_samsung_55.jpg',      15, 15990000, 1, NOW(), 1, NOW(), 1),
