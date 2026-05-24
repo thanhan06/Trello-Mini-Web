@@ -114,3 +114,33 @@ Cách dùng nhanh:
 - Đặt breakpoint trực tiếp trong các file Java (controller/service) rồi gọi API để nó dừng.
 
 Nếu máy bạn dùng `127.0.0.1` thay vì `localhost` thì có thể đổi `hostName` trong ​.vscode/launch.json thành `127.0.0.1` (port vẫn 5005).
+
+
+
+Dưới đây là các thay đổi của cơ sở dữ liệu đã được chuyển sang định dạng văn bản theo yêu cầu của bạn:
+
+### 1. Bảng `mstuser`
+
+* **Thuộc tính `role**`: Chúng tôi nhận thấy hệ thống hiện tại không phân biệt được quyền hạn giữa admin và nhân viên, dẫn đến việc không kiểm soát được rủi ro bảo mật và thao tác. Hướng giải quyết là thêm mới thuộc tính `role` với kiểu dữ liệu `smallint` (quy ước: 1 = admin, 2 = nhân viên).
+* **Thuộc tính `status**`: Chúng tôi nhận thấy bảng user chưa có cách nào để vô hiệu hóa tài khoản khi cần, trong khi các bảng như `mstproduct` và `mstproducttype` đều đã được trang bị tính năng này. Hướng giải quyết là thêm mới thuộc tính `status` kiểu `bit` (1 = disable, 0 = active) để đồng nhất luồng xử lý với các bảng khác.
+
+---
+
+### 2. Bảng `mstproducttype` và `mstproduct`
+
+* **Thuộc tính `create_user` / `update_user**`: Chúng tôi nhận thấy việc lưu trữ thông tin người thao tác dưới dạng `character(6)` không thể tạo được ràng buộc (constraint) với bảng user, dẫn đến nguy cơ dữ liệu sai lệch hoặc trỏ đến một nhân sự không tồn tại. Hướng giải quyết là giữ nguyên tên trường, nhưng đổi kiểu dữ liệu thành `integer` và thêm khóa ngoại (Foreign Key) trỏ đến `mstuser.psn_cd` nhằm đảm bảo tính toàn vẹn dữ liệu.
+* **Thuộc tính `product_img**`: Chúng tôi nhận thấy việc lưu trữ trực tiếp file nhị phân của ảnh vào database thông qua kiểu `bytea` là rất tốn tài nguyên và làm suy giảm nghiêm trọng hiệu năng truy vấn (query). Hướng giải quyết là đổi kiểu dữ liệu từ `bytea` sang `varchar` để chỉ lưu URL/đường dẫn ảnh, còn file ảnh thực tế sẽ được đẩy lên file server hoặc object storage.
+* **Thuộc tính `product_id**`: Chúng tôi nhận thấy kiểu dữ liệu `integer` không có khái niệm khai báo kích thước (length=8), nếu hệ thống cần lưu trữ 8 byte thì bắt buộc phải chuyển đổi kiểu. Hướng giải quyết là chuyển từ `integer(8)` sang `bigint` để sử dụng đúng loại dữ liệu.
+* **Thuộc tính `price**`: Chúng tôi nhận thấy hệ thống đang thiếu nơi lưu trữ giá sản phẩm, dẫn đến việc không có cơ sở để tính tiền cho các đơn hàng. Hướng giải quyết là thêm mới thuộc tính `price` với kiểu `integer` nhằm lưu trữ giá bán hiện tại của sản phẩm.
+
+---
+
+### 3. Bảng `trproductorder`
+
+* **Khóa chính (Primary Key)**: Chúng tôi nhận thấy việc thiết kế khóa chính dạng phức hợp (composite) bao gồm cả `custom_name` và `order_product_id` là sai lầm vì tên khách hàng có thể bị trùng lặp, thay đổi hoặc bỏ trống. Hướng giải quyết là loại bỏ hai thuộc tính này khỏi khóa chính, chỉ sử dụng duy nhất cột `id` kiểu `bigint` làm định danh độc nhất.
+* **Thuộc tính `order_product_id**`: Chúng tôi nhận thấy cột này hiện không có bất kỳ ràng buộc nào, khiến hệ thống không thể xác định được mã này thuộc về sản phẩm nào và rất dễ sinh ra lỗi dữ liệu rác. Hướng giải quyết là thêm khóa ngoại (Foreign Key) trỏ về `mstproduct.product_id` để đảm bảo khách hàng chỉ có thể tạo đơn với những sản phẩm có thực.
+* **Thuộc tính `create_user` / `update_user**`: Chúng tôi nhận thấy vấn đề mất đồng bộ tương tự như ở bảng `mstproducttype`. Hướng giải quyết là đổi kiểu dữ liệu sang `integer` và gắn khóa ngoại trỏ về `mstuser.psn_cd` để nhân viên tạo/sửa đơn hàng được kiểm soát chặt chẽ.
+* **Thuộc tính `unit_price**`: Chúng tôi nhận thấy giá sản phẩm thường xuyên biến động theo thời gian, nếu chỉ phụ thuộc vào khóa ngoại thì khi giá đổi, các đơn hàng cũ cũng sẽ bị sai lệch giá trị lịch sử. Hướng giải quyết là thêm mới thuộc tính `unit_price` kiểu `integer` để lưu lại (snapshot) chính xác mức giá sản phẩm ngay tại thời điểm khách hàng chốt đơn.
+* **Thuộc tính `total_price**`: Chúng tôi nhận thấy đơn hàng đang thiếu trường dữ liệu lưu trữ tổng số tiền khách cần thanh toán. Hướng giải quyết là thêm mới trường `total_price` kiểu `integer`, giá trị sẽ được tính toán tự động bằng công thức: `unit_price` × `order_product_amount`.
+* **Thuộc tính `order_status**`: Chúng tôi nhận thấy luồng vận hành hiện không có cách nào để theo dõi được vòng đời của đơn hàng (ví dụ: đang chờ, đã xác nhận, đã giao...). Hướng giải quyết là thêm mới trường `order_status` kiểu `varchar` để quản lý các trạng thái này.
+* **Thuộc tính `order_product_amount**`: Chúng tôi nhận thấy trường dữ liệu này ở thiết kế gốc (`order_product_amout`) đã bị viết sai lỗi chính tả. Hướng giải quyết là đổi lại tên cột thành `order_product_amount` cho đúng chuẩn.
