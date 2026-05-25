@@ -42,12 +42,14 @@ public class SercurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.GET, "/", "/index", "/index.html").permitAll()
                         .requestMatchers(HttpMethod.GET, "/shop/product-list").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/test/products").permitAll()
                         .requestMatchers(HttpMethod.GET, "/productlist").permitAll()
                         .requestMatchers(HttpMethod.GET, "/shop/products", "/shop/products/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/shop/product-types", "/shop/product-types/**").permitAll()
-                        .requestMatchers("/bootstrap/**", "/css/**", "/js/**", "/img/**", "/favicon.ico").permitAll()
+                        .requestMatchers("/bootstrap/**", "/css/**", "/js/**", "/img/**", "/favicon.ico", "/uploads/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/css/**", "/js/**", "/images/**").permitAll()
                         .requestMatchers(HttpMethod.POST, PUBLIC_ENDPOINTS).permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/images/upload").permitAll() // Cho phép upload file (test)
                         .requestMatchers("/error").permitAll()
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(oauth2 -> oauth2
