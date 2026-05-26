@@ -95,7 +95,7 @@ public class ProductServiceImpl implements ProductService {
    @Override
 public Page<ProductResponse> getProducts(int pageNo, int pageSize,
                                           String name, String type, String desc) {
-    Pageable pageable = PageRequest.of(pageNo - 1, pageSize, Sort.by("productId").ascending());
+    Pageable pageable = PageRequest.of(pageNo - 1, pageSize, Sort.by(Sort.Direction.DESC, "orderProductAmount"));
 
     String namePram  = (name != null && !name.isBlank()) ? "%" + name.toLowerCase() + "%" : null;
     String descParam = (desc != null && !desc.isBlank()) ? "%" + desc.toLowerCase() + "%" : null;

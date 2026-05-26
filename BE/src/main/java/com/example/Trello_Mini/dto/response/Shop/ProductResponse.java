@@ -22,6 +22,7 @@ public class ProductResponse {
     String description;
     String productImg;
     Integer productAmount;
+    Integer orderProductAmount;
     Long price;
     Integer producttypeId;
     String producttypeName;

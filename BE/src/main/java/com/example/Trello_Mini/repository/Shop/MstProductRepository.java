@@ -14,6 +14,16 @@ public interface MstProductRepository extends JpaRepository<MstProductEntity, Lo
                 WHERE (cast(:name as text) IS NULL OR LOWER(p.productName) LIKE cast(:name as text))
                   AND (:typeId IS NULL OR p.productType.producttypeId = :typeId)
                   AND (cast(:desc as text) IS NULL OR LOWER(p.description) LIKE cast(:desc as text))
+                  AND p.status <> true
+                  AND p.productType.status <> true
+            """,
+           countQuery = """
+                SELECT count(p) FROM MstProductEntity p
+                WHERE (cast(:name as text) IS NULL OR LOWER(p.productName) LIKE cast(:name as text))
+                  AND (:typeId IS NULL OR p.productType.producttypeId = :typeId)
+                  AND (cast(:desc as text) IS NULL OR LOWER(p.description) LIKE cast(:desc as text))
+                  AND p.status <> true
+                  AND p.productType.status <> true
             """)
     Page<MstProductEntity> search(
             @Param("name") String name,

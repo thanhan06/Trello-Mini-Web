@@ -11,6 +11,9 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
+
+import org.hibernate.annotations.Formula;
+
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -49,6 +52,9 @@ public class MstProductEntity {
 
     @Column(name = "product_amount")
     Integer productAmount;
+
+    @Formula("(SELECT COALESCE(SUM(o.order_product_amount), 0) FROM trproductorder o WHERE o.order_product_id = product_id)")
+    Integer orderProductAmount;
 
     @Column(name = "price")
     Long price;

@@ -41,7 +41,7 @@
       <h1 class="fs-4 fw-bold mb-2">Danh sách sản phẩm</h1>
 
       <!-- Search bar: dùng form GET, submit tự build URL, reset page=1 -->
-      <form th:action="@{/shop/product-list}" method="get" class="search-bar px-2 py-2 mb-2">
+      <form th:action="@{/shop/product-list}" method="get" class="search-bar px-2 py-2 mb-2" autocomplete="off">
         <input type="hidden" name="page" value="1" />
         <input type="hidden" name="size" th:value="${pageSize}" />
         <div class="row g-2 align-items-center">
@@ -58,7 +58,7 @@
           </div>
           <div class="col-auto">
             <select id="qType" name="type" class="form-select form-select-sm">
-              <option value="" th:selected="${searchType == null or searchType == ''}">-- Tất cả --</option>
+              <option value="" th:selected="${searchType == null or searchType == ''}"></option>
               <option
                 th:each="type : ${productTypes}"
                 th:value="${type.producttypeId}"
@@ -127,7 +127,8 @@
               <input type="number" class="form-control form-control-sm qty-input"
                      min="0"
                      th:data-id="${product.productId}"
-                     th:data-max="${product.productAmount}"
+                     th:data-max="${product.productAmount - (product.orderProductAmount != null ? product.orderProductAmount : 0)}"
+                     th:data-order="${product.orderProductAmount != null ? product.orderProductAmount : 0}"
                      th:data-name="${product.productName}"
                      th:data-status="${product.status}"
                      placeholder="" />
@@ -148,7 +149,40 @@
     </div>
 
     <script>
-      // ── Đặt hàng: validate số lượng ──
+      // Xử lý reload trang (F5): Reset lại url để xóa các điều kiện search
+      if (window.performance) {
+        var navEntries = window.performance.getEntriesByType("navigation");
+        if (navEntries.length > 0 && navEntries[0].type === "reload" && window.location.search !== "") {
+          window.location.href = window.location.pathname;
+        }
+      }
+
+      // ── Đặt hàng: validate logic ngay khi nhập ──
+      const statusText = document.getElementById('statusText');
+      const inputs = document.querySelectorAll('.qty-input');
+      
+      inputs.forEach(function (input) {
+        input.addEventListener('input', function () {
+          statusText.textContent = '';
+          input.classList.remove('is-invalid');
+          
+          if (!input.value) return;
+          const val = parseInt(input.value, 10);
+          if (isNaN(val)) return;
+
+          const max = parseInt(input.dataset.max, 10);
+          const name = input.dataset.name;
+
+          if (val > max) {
+            statusText.textContent = 'Số lượng nhập của ' + name + ' vượt quá ' + max;
+            input.classList.add('is-invalid');
+            input.focus();
+            // Có thể reset lại value nếu muốn: input.value = '';
+          }
+        });
+      });
+
+      // ── Đặt hàng: validate số lượng khi click button ──
       document.getElementById('btnOrder').addEventListener('click', function () {
         const statusText = document.getElementById('statusText');
         const inputs = document.querySelectorAll('.qty-input');
@@ -171,7 +205,8 @@
         }
 
         enabledInputs.forEach(function (input) {
-          input.classList.remove('is-invalid');
+          if (input.classList.contains('is-invalid')) return; // đã lỗi sẵn khi input rồi
+          
           const val = parseInt(input.value, 10);
           const max = parseInt(input.dataset.max, 10);
           const name = input.dataset.name;
@@ -179,7 +214,7 @@
           if (!input.value || isNaN(val) || val <= 0) return;
 
           if (val > max) {
-            errors.push('"' + name + '": đã nhập ' + val + ', tồn kho chỉ còn ' + max);
+            errors.push('"' + name + '": đã nhập ' + val + ', nhưng tồn kho khả dụng chỉ còn ' + max);
             input.classList.add('is-invalid');
           }
         });
