@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Xác nhận đặt hàng</title>
+
+    <link rel="stylesheet" th:href="@{/css/style.css}" />
+    <link rel="stylesheet" th:href="@{/bootstrap/css/bootstrap.min.css}" />
+    <script defer th:src="@{/bootstrap/js/bootstrap.bundle.min.js}"></script>
+
+    <style>
+      body { background-color: #a8e6ef !important; }
+      .container-order { background-color: #ffffff; padding: 20px; border-radius: 8px; margin-top: 50px; }
+      .btn-order-confirm { background-color: #28a745; color: #fff; }
+      .btn-order-cancel { background-color: #dc3545; color: #fff; }
+    </style>
+  </head>
+  <body>
+    <div class="container container-order shadow-sm">
+      <h3 class="mb-4">Xác nhận đặt hàng</h3>
+      
+      <p>Bạn đã chọn các sản phẩm sau (Dữ liệu giỏ tạm thời):</p>
+      
+      <div id="cartItems" class="mb-4">
+        <!-- Chèn tóm tắt sản phẩm bằng JS nếu cần -->
+      </div>
+      
+      <div class="d-flex gap-3">
+        <button id="btnOrderConfirm" class="btn btn-order-confirm">Đặt hàng</button>
+        <button id="btnOrderCancel" class="btn btn-order-cancel">Cancel</button>
+      </div>
+    </div>
+
+    <script>
+      // Load thử ra UI một thông báo nhỏ (nếu cần hiển thị)
+      const storedCart = JSON.parse(sessionStorage.getItem('cartQty') || '{}');
+      const cartDiv = document.getElementById('cartItems');
+      const ids = Object.keys(storedCart);
+      
+      if (ids.length === 0) {
+        cartDiv.innerHTML = '<p class="text-danger">Không có sản phẩm nào trong giỏ!</p>';
+      } else {
+        cartDiv.innerHTML = '<ul>' + ids.map(id => '<li>Product ID: ' + id + ' | Số lượng: ' + storedCart[id] + '</li>').join('') + '</ul>';
+      }
+
+      // Xử lý xác nhận đặt hàng
+      document.getElementById('btnOrderConfirm').addEventListener('click', function() {
+        // Thực tế có thể call api /shop/orders/create ở đây.
+        
+        // Reset giỏ nhớ tạm
+        sessionStorage.removeItem('cartQty');
+        sessionStorage.removeItem('lastSearchUrl');
+        
+        alert("Đặt hàng thành công!");
+        
+        // Trở về trang danh sách và reset điều kiện search (về trắng)
+        window.location.href = '/shop/product-list';
+      });
+
+      // Xử lý Hủy
+      document.getElementById('btnOrderCancel').addEventListener('click', function() {
+        // Trở lại đúng đường dẫn đã tìm kiếm (giữ nguyên thanh search và session số lượng)
+        const lastUrl = sessionStorage.getItem('lastSearchUrl') || '';
+        window.location.href = '/shop/product-list' + lastUrl;
+      });
+    </script>
+  </body>
+</html>

@@ -25,6 +25,56 @@
       tbody td { font-size: 0.95rem; vertical-align: middle; overflow: hidden; word-break: break-word; }
       tbody td img { display: block; width: 70px; height: 70px; object-fit: cover; }
       tbody td input.qty-input { height: 36px; font-size: 0.95rem; width: 100%; }
+
+      /* Tùy chỉnh viền form control (input) để tạo hiệu ứng nổi gờ (viền trên, trái dày và đậm hơn) */
+      input.form-control, .custom-select-btn {
+        border-top: 2px solid #888 !important;
+        border-left: 2px solid #888 !important;
+        border-bottom: 1px solid #ddd !important;
+        border-right: 1px solid #ddd !important;
+        border-radius: 0 !important; /* Xóa bo góc mặc định của Bootstrap */
+      }
+      
+      .custom-select-btn {
+        width: 150px;
+        height: 31px;
+        background-color: #fff;
+        border: 1px solid #ced4da;
+        border-radius: 0;
+        padding: 0 30px 0 8px; /* space for the right button */
+        color: #212529;
+        position: relative;
+        text-align: left;
+        display: flex;
+        align-items: center;
+      }
+      /* Ghi đè biểu tượng caret mặc định của Bootstrap */
+      .custom-select-btn::after {
+        content: "";
+        position: absolute;
+        right: 0;
+        top: 0;
+        height: 100%;
+        width: 30px;
+        background-color: #e9ecef; /* Màu xám ở góc phải */
+        border-left: 1px solid #ced4da;
+        background-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/></svg>');
+        background-repeat: no-repeat;
+        background-size: 20px;
+        background-position: center;
+        border-top: none;
+        border-bottom: none;
+        border-right: none;
+        margin-left: 0;
+        vertical-align: middle;
+      }
+      .custom-select-btn:hover,
+      .custom-select-btn:focus,
+      .custom-select-btn:active {
+        background-color: #fff !important; 
+        border-color: #ced4da !important;
+        box-shadow: none !important;
+      }
     </style>
   </head>
   <body>
@@ -57,15 +107,23 @@
             <label for="qType" class="col-form-label">Loại sản phẩm</label>
           </div>
           <div class="col-auto">
-            <select id="qType" name="type" class="form-select form-select-sm">
-              <option value="" th:selected="${searchType == null or searchType == ''}"></option>
-              <option
-                th:each="type : ${productTypes}"
-                th:value="${type.producttypeId}"
-                th:text="${type.name}"
-                th:selected="${searchType != null and searchType == type.producttypeId.toString()}"
-              ></option>
-            </select>
+            <!-- Dùng cấu trúc Dropdown của Bootstrap để thay thế thẻ select native, cho phép tùy chỉnh chiều cao (max-height) -->
+            <div class="dropdown">
+              <input type="hidden" name="type" id="qTypeHidden" th:value="${searchType}" />
+              <button class="btn btn-sm text-start custom-select-btn" 
+                      type="button" id="qTypeDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                <span id="qTypeLabel" style="width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></span>
+              </button>
+              <!-- Giới hạn max-height để hiển thị đúng 3 dòng (mỗi dòng ~30-32px), có thanh cuộn nếu vượt quá -->
+              <ul class="dropdown-menu w-100 shadow-sm" aria-labelledby="qTypeDropdown" style="max-height: 100px; overflow-y: auto; padding: 0;">
+                <li><a class="dropdown-item py-1" href="#" data-value="">&nbsp;</a></li>
+                <li th:each="type : ${productTypes}">
+                  <a class="dropdown-item py-1" href="#" 
+                     th:data-value="${type.producttypeId}" 
+                     th:text="${type.name}"></a>
+                </li>
+              </ul>
+            </div>
           </div>
 
           <div class="col-auto" style="margin-left: 30px;">
@@ -149,81 +207,216 @@
     </div>
 
     <script>
-      // Xử lý reload trang (F5): Reset lại url để xóa các điều kiện search
+      // ============================================================================
+      // 1. XỬ LÝ KHI NGƯỜI DÙNG RELOAD TRANG (BẤM F5 HOẶC TẢI LẠI)
+      // ============================================================================
+      // Kiểm tra API Performance của trình duyệt để biết nguyên nhân tải trang
       if (window.performance) {
-        var navEntries = window.performance.getEntriesByType("navigation");
-        if (navEntries.length > 0 && navEntries[0].type === "reload" && window.location.search !== "") {
-          window.location.href = window.location.pathname;
+        // Lấy danh sách các sự kiện điều hướng trang (cách trang được load)
+        const navEntries = window.performance.getEntriesByType("navigation");
+        // Nếu trang được load qua hành động "reload" (người dùng ấn F5 hoặc Ctrl+R)
+        if (navEntries.length > 0 && navEntries[0].type === "reload") {
+          // Xóa toàn bộ dữ liệu giỏ hàng lưu tạm trong phiên làm việc hiện tại
+          sessionStorage.removeItem('cartQty');
+          // Nếu URL có chứa các tiêu chí tìm kiếm (query parameters như ?name=...&page=...)
+          if (window.location.search !== "") {
+            // Chuyển hướng người dùng về lại trang danh sách gốc (URL không chứa parameter)
+            // Việc này giúp xóa trắng các ô điều kiện tìm kiếm.
+            window.location.href = window.location.pathname;
+          }
         }
       }
 
-      // ── Đặt hàng: validate logic ngay khi nhập ──
-      const statusText = document.getElementById('statusText');
-      const inputs = document.querySelectorAll('.qty-input');
-      
-      inputs.forEach(function (input) {
-        input.addEventListener('input', function () {
-          statusText.textContent = '';
-          input.classList.remove('is-invalid');
+      // ============================================================================
+      // 2. KHÔI PHỤC DỮ LIỆU KHI TRANG VỪA TẢI XONG (Bao gồm chuyển trang, back/forward)
+      // ============================================================================
+      document.addEventListener('DOMContentLoaded', function () {
+        
+        // --- A. XỬ LÝ SỰ KIỆN VÀ HIỂN THỊ DROPDOWN LOẠI SẢN PHẨM ---
+        const qTypeHidden = document.getElementById('qTypeHidden'); // Ẩn để submit form
+        const qTypeLabel = document.getElementById('qTypeLabel');   // Chữ hiển thị trên dropdown
+        const drpItems = document.querySelectorAll('#qTypeDropdown + .dropdown-menu .dropdown-item'); // Các item trong menu sổ xuống
+
+        let initialMatched = false; // Biến cờ kiểm tra xem type đang tìm kiếm có trùng mục nào trong danh sách không
+        drpItems.forEach(item => {
+          // Khi mới load, nếu value của item nào trong menu trùng với giá trị đang lưu trong hidden input 
+          // (giá trị này do Backend set từ Controller truyền xuống qua model)
+          if (item.getAttribute('data-value') === qTypeHidden.value) {
+             // Cập nhật nhãn hiển thị thành tên loại sản phẩm (nếu nội dung là trắng \xa0 thì hiển thị chuỗi rỗng)
+             qTypeLabel.textContent = item.textContent === '\xa0' ? '' : item.textContent;
+             initialMatched = true; // Đánh dấu là đã tìm thấy
+          }
           
-          if (!input.value) return;
-          const val = parseInt(input.value, 10);
-          if (isNaN(val)) return;
+          // Lắng nghe sự kiện click trên từng item của menu dropdown
+          item.addEventListener('click', function(e) {
+            e.preventDefault(); // Ngăn hành vi cuộn mặc định của thẻ <a>
+            const val = this.getAttribute('data-value'); // Lấy giá trị ID của Loại SP
+            qTypeHidden.value = val; // Gán ID đó vào thẻ input ẩn để chuẩn bị submit form
+            // Thay đổi chữ trên nút bấm cho khớp với Loại bạn vừa chọn
+            qTypeLabel.textContent = this.textContent === '\xa0' ? '' : this.textContent;
+          });
+        });
+        // Nếu không có bất kì value nào khớp (hoặc searchType null), để trắng nhãn Dropdown
+        if(!initialMatched) qTypeLabel.textContent = ''; 
 
-          const max = parseInt(input.dataset.max, 10);
-          const name = input.dataset.name;
-
-          if (val > max) {
-            statusText.textContent = 'Số lượng nhập của ' + name + ' vượt quá ' + max;
-            input.classList.add('is-invalid');
-            input.focus();
-            // Có thể reset lại value nếu muốn: input.value = '';
+        // --- B. KHÔI PHỤC DỮ LIỆU CÁC Ô NHẬP SỐ LƯỢNG SẢN PHẨM ---
+        // Lấy chuỗi JSON giỏ hàng từ Session. Nếu không có thì fallback về chuỗi gán object rỗng '{}'
+        const storedCart = JSON.parse(sessionStorage.getItem('cartQty') || '{}');
+        const inputs = document.querySelectorAll('.qty-input'); // Lấy tất cả ô nhập liệu số lượng trên form
+        
+        inputs.forEach(function (input) {
+          const productId = input.dataset.id; // Mã SP lưu trong th:data-id
+          
+          // Kiểm tra xem SP này đã có dữ liệu nhập trong session chưa
+          if (storedCart[productId]) {
+            // Nếu có, tự động điền lại giá trị vào UI cho người dùng
+            input.value = storedCart[productId];
+            // Đồng thời validate lại (đề phòng ai đó sửa bậy bạ biến session bằng F12)
+            const numVal = Number(input.value);
+            // Nếu dữ liệu khôi phục không phải là số hợp lệ -> đánh dấu ô hiển thị viền đỏ
+            if (isNaN(numVal) || !Number.isInteger(numVal) || numVal < 0) {
+              input.classList.add('is-invalid');
+            }
           }
         });
       });
 
-      // ── Đặt hàng: validate số lượng khi click button ──
+      // ============================================================================
+      // 3. VALIDATE LOGIC NGAY KHI NGƯỜI DÙNG ĐANG GÕ VÀO Ô SỐ LƯỢNG
+      // ============================================================================
+      const statusText = document.getElementById('statusText'); // Chỗ hiển thị chữ lỗi
+      const inputs = document.querySelectorAll('.qty-input');
+      
+      inputs.forEach(function (input) {
+        input.addEventListener('input', function () {
+          // Mỗi phím gõ xuống thì reset lại trạng thái lỗi trước đó
+          statusText.textContent = '';
+          input.classList.remove('is-invalid');
+          input.removeAttribute('title'); // Gỡ tooltip báo lỗi
+          
+          const rawValue = input.value; // Lấy chuỗi thô người dùng gõ
+          const numVal = Number(rawValue); // Ép kiểu thử sang dạng Số
+          const max = parseInt(input.dataset.max, 10); // Lấy giới hạn tồn kho max từ th:data-max
+          const productId = input.dataset.id; 
+          const name = input.dataset.name;
+
+          // Đọc giỏ session hiện tại lên (để add vào hoặc xóa đi)
+          const storedCart = JSON.parse(sessionStorage.getItem('cartQty') || '{}');
+
+          // TÌNH HUỐNG 1: Người dùng xóa trắng ô input -> Xóa SP này khỏi giỏ session
+          if (!rawValue) {
+             delete storedCart[productId];
+          } 
+          // TÌNH HUỐNG 2: Nhập bậy (Chữ cái, số thập phân, số âm) -> Báo lỗi & xóa khỏi session
+          else if (isNaN(numVal) || !Number.isInteger(numVal) || numVal < 0) {
+             statusText.textContent = 'Số lượng nhập của ' + name + ' phải là số nguyên dương (không chứa dấu thập phân, âm).';
+             input.classList.add('is-invalid'); // Tô viền đỏ ô input
+             input.title = 'Vui lòng nhập số nguyên dương';
+             delete storedCart[productId]; // Xóa dữ liệu rác này để không ghim vào Giỏ
+          } 
+          // TÌNH HUỐNG 3: Nhập Số nguyên hợp lệ
+          else {
+             // Nếu số lớn hơn tồn kho thực tế -> Tô cảnh báo nhưng VẪN cho vào Session để người dùng xem lại
+             if (numVal > max) {
+               statusText.textContent = 'Số lượng nhập của ' + name + ' vượt quá ' + max;
+               input.classList.add('is-invalid');
+               input.title = 'Tồn kho chỉ còn ' + max;
+             }
+             
+             // Nếu nhập số 0 hệt như chưa nhập -> Xóa đi luôn
+             if (numVal === 0) {
+               delete storedCart[productId];
+             } else {
+               // Còn không thì chính thức ghi đè/lưu số lượng của SP này vào bộ Session chung
+               storedCart[productId] = numVal;
+             }
+          }
+          
+          // Ghi ngược trở lại JSON object vào RAM SessionStorage 
+          // -> Nếu lật sang trang 2, session này vẫn sống.
+          sessionStorage.setItem('cartQty', JSON.stringify(storedCart));
+        });
+      });
+
+      // ============================================================================
+      // 4. KIỂM TRA CHỐT CHẶN CUỐI CÙNG KHI BẤM NÚT "ĐẶT HÀNG"
+      // ============================================================================
       document.getElementById('btnOrder').addEventListener('click', function () {
         const statusText = document.getElementById('statusText');
         const inputs = document.querySelectorAll('.qty-input');
-        const errors = [];
+        const errors = []; // Mảng chứa các dòng báo lỗi nếu có
 
-        // Chỉ xét các sản phẩm enable (status = false theo DB)
+        // Lọc tất cả ô input chỉ lấy các sản phẩm chưa bị vô hiệu hóa (status === false)
         const enabledInputs = Array.from(inputs).filter(function (input) {
           return input.dataset.status === 'false';
         });
 
-        // Kiểm tra có ít nhất 1 ô enable được nhập số lượng > 0
-        const hasAnyQty = enabledInputs.some(function (input) {
-          const val = parseInt(input.value, 10);
-          return input.value && !isNaN(val) && val > 0;
+        // Kéo giỏ hàng toàn cục hiện đang có trong máy lên
+        const storedCart = JSON.parse(sessionStorage.getItem('cartQty') || '{}');
+        // Chỉ lấy ra danh sách các ProductId có số lượng lớn hơn 0
+        const productIdsInCart = Object.keys(storedCart).filter(id => storedCart[id] > 0);
+
+        // B1: CHECK LỖI TYPO
+        let hasInvalidInput = false;
+        enabledInputs.forEach(function(input) {
+           const numVal = Number(input.value);
+           // Kiểm tra xem hiện trên màn hình UI có ô nào đang chứa chữ cái hay phẩy/âm không
+           const isInvalidNumber = input.value && (isNaN(numVal) || !Number.isInteger(numVal) || numVal < 0);
+
+           // Nếu ô đó đang bị class 'is-invalid' từ lúc gõ, hoặc vừa phát hiện là number hỏng dở
+           if (input.classList.contains('is-invalid') || isInvalidNumber) {
+               hasInvalidInput = true;
+               input.classList.add('is-invalid');
+               if (isInvalidNumber) {
+                 errors.push('"' + input.dataset.name + '": Số lượng phải là số nguyên hợp lệ (không chứa phần thập phân hoặc âm).');
+               }
+           }
         });
 
-        if (!hasAnyQty) {
-          statusText.textContent = 'Vui lòng nhập số lượng cho ít nhất một sản phẩm.';
+        // Nếu kẹt ở B1 (Lỗi type) thì văng ngay không cho qua
+        if (hasInvalidInput) {
+           if (errors.length === 0) errors.push('Vui lòng sửa các lỗi nhập liệu (được tô đỏ).');
+           statusText.innerHTML = 'Lỗi nhập liệu:<br>' + errors.join('<br>');
+           return;
+        }
+
+        // B2: CHECK GIỎ CÓ TRỐNG KHÔNG
+        // Nếu Session ghi nhận mọi thứ sạch trơn (người dùng chưa nhập bất cứ số nào > 0 ở trang này cũng như trang trước)
+        if (productIdsInCart.length === 0) {
+          statusText.textContent = 'Vui lòng nhập số lượng hợp lệ cho ít nhất một sản phẩm.';
           return;
         }
 
+        // B3: CHECK LỖI TỒN KHO OVER (VƯỢT TRẦN)
         enabledInputs.forEach(function (input) {
-          if (input.classList.contains('is-invalid')) return; // đã lỗi sẵn khi input rồi
+          const rawValue = input.value;
+          if (!rawValue) return;
           
-          const val = parseInt(input.value, 10);
+          const val = parseInt(rawValue, 10);
           const max = parseInt(input.dataset.max, 10);
           const name = input.dataset.name;
 
-          if (!input.value || isNaN(val) || val <= 0) return;
-
+          // Nếu phát hiện trên giao diện chừa lại 1 ô vượt Max, add message vào và chặn
           if (val > max) {
             errors.push('"' + name + '": đã nhập ' + val + ', nhưng tồn kho khả dụng chỉ còn ' + max);
             input.classList.add('is-invalid');
           }
         });
 
+        // TỔNG KẾT
         if (errors.length > 0) {
-          statusText.innerHTML = 'Số lượng vượt tồn kho:<br>' + errors.join('<br>');
+          // Bể kèo, In danh sách lỗi bằng tag <br> xuống dòng
+          statusText.innerHTML = 'Lỗi đặt hàng:<br>' + errors.join('<br>');
         } else {
+          // Okie qua tọt 
           statusText.textContent = '';
-          // TODO: xử lý đặt hàng
+          
+          // Mẹo chuyển trang: Lưu lại đoạn String thông số đường dẫn trên thanh URL hiện tại (VD: ?page=2&name=abc)
+          // Để lát nữa nếu user Cancel trên màn Order thì chèn ngược String này lại vào để về đúng y vị trí cũ.
+          sessionStorage.setItem('lastSearchUrl', window.location.search);
+          
+          // Điều hướng chuyển trang Order để tiến hành xem thông tin đặt
+          window.location.href = '/shop/product-order';
         }
       });
     </script>

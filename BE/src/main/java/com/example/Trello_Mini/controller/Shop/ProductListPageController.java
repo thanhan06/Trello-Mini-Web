@@ -68,6 +68,11 @@ public class ProductListPageController {
         return "listproduct";
     }
 
+    @GetMapping("/shop/product-order")
+    public String productOrder(Model model) {
+        return "product-order";
+    }
+
     @GetMapping("/api/test/products")
     @ResponseBody
     public List<ProductResponse> testGetProducts(
