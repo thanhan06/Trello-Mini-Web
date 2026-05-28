@@ -21,27 +21,6 @@ function decodeJwt(token) {
   }
 }
 
-async function apiGet(url) {
-  const token = getAccessToken();
-  const headers = { 'Content-Type': 'application/json' };
-  if (token) headers['Authorization'] = `Bearer ${token}`;
-
-  const res = await fetch(url, { method: 'GET', headers });
-  const text = await res.text();
-  let payload;
-  try {
-    payload = text ? JSON.parse(text) : null;
-  } catch {
-    payload = null;
-  }
-
-  if (!res.ok) {
-    const msg = payload?.message || `Request failed: ${res.status}`;
-    throw new Error(msg);
-  }
-  return payload?.data;
-}
-
 function normalize(str) {
   return String(str || '').trim().toLowerCase();
 }
@@ -188,13 +167,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     setStatus('Đang tải dữ liệu...');
 
     const initialTypes = window.__INITIAL_PRODUCT_TYPES__;
-    const types = Array.isArray(initialTypes) ? initialTypes : await apiGet('/shop/product-types');
+    // const types = Array.isArray(initialTypes) ? initialTypes : await apiGet('/shop/product-types');
+    const types = Array.isArray(initialTypes) ? initialTypes : [];
     if (Array.isArray(types)) {
       types.forEach((t) => {
         const opt = document.createElement('option');
         opt.value = String(t.producttypeId);
         opt.textContent = t.name || String(t.producttypeId);
-        qType.appendChild(opt);
+        if (qType) qType.appendChild(opt);
       });
     }
 

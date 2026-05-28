@@ -22,23 +22,34 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
     public void commence(
             HttpServletRequest request, HttpServletResponse response, AuthenticationException authException)
             throws IOException, ServletException {
-        ErrorCode errorCode = ErrorCode.UNAUTHENTICATED;
+            
+        // Kiểm tra xem trình duyệt có đang yêu cầu trả về HTML (duyệt web) hay không
+        String acceptHeader = request.getHeader("Accept");
+        boolean isHtmlRequest = acceptHeader != null && acceptHeader.contains("text/html");
 
-        response.setStatus(errorCode.status().value());
-        response.setContentType("application/json;charset=UTF-8");
+        if (isHtmlRequest) {
+            // Nếu là trình duyệt đang mở trang (như /shop/product-list), thì Redirect 302 về login
+            response.sendRedirect("/");
+        } else {
+            // Nếu là gọi API (fetch, axios, postman), thì trả về JSON báo lỗi 401 như cũ
+            ErrorCode errorCode = ErrorCode.UNAUTHENTICATED;
 
-        ApiError apiError = new ApiError(
-                Instant.now(),
-                errorCode.status().value(),
-                errorCode.code(),
-                errorCode.message(),
-                request.getRequestURI());
+            response.setStatus(errorCode.status().value());
+            response.setContentType("application/json;charset=UTF-8");
 
-        ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.registerModule(new JavaTimeModule()); // Register JavaTimeModule for Instant
-        objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS); // Write as ISO-8601 string
+            ApiError apiError = new ApiError(
+                    Instant.now(),
+                    errorCode.status().value(),
+                    errorCode.code(),
+                    errorCode.message(),
+                    request.getRequestURI());
 
-        response.getWriter().write(objectMapper.writeValueAsString(apiError));
-        response.flushBuffer();
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.registerModule(new JavaTimeModule());
+            objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+
+            response.getWriter().write(objectMapper.writeValueAsString(apiError));
+            response.flushBuffer();
+        }
     }
 }

@@ -56,8 +56,14 @@ document.addEventListener('DOMContentLoaded', () => {
 			const apiResponse = await loginRequest(email, password);
 			const data = apiResponse?.data;
 
-			if (data?.accessToken) localStorage.setItem('accessToken', data.accessToken);
-			if (data?.refreshToken) localStorage.setItem('refreshToken', data.refreshToken);
+			if (data?.accessToken) {
+				localStorage.setItem('accessToken', data.accessToken);
+				// SET COOKIE để Thymeleaf Backend có móm cho Auth
+				document.cookie = `accessToken=${data.accessToken}; path=/; max-age=${60 * 60}`; // Sống 1 giờ
+			}
+			if (data?.refreshToken) {
+				localStorage.setItem('refreshToken', data.refreshToken);
+			}
 
 			setError('Đăng nhập thành công. Đang chuyển hướng...');
 			setTimeout(() => {
