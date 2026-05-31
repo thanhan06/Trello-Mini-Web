@@ -28,6 +28,7 @@ public enum ErrorCode {
 
     // ORDER
     ORDER_NOT_FOUND("ORDER_NOT_FOUND", HttpStatus.NOT_FOUND, "Order not found"),
+    ORDER_ITEM_NOT_ENOUGH("ORDER_ITEM_NOT_ENOUGH", HttpStatus.CONFLICT, "Số lượng sản phẩm không đủ"),
 
     // USER / ROLE
     USER_NOT_FOUND("USER_NOT_FOUND", HttpStatus.NOT_FOUND, "User not found"),

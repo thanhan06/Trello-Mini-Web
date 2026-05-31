@@ -44,8 +44,32 @@
     <script defer th:src="@{/bootstrap/js/bootstrap.bundle.min.js}"></script>
 
     <style>
+      html,
       body {
+        height: 100%;
+      }
+
+      body {
+        margin: 0;
         background-color: #a8e6ef !important;
+        overflow: hidden;
+      }
+
+      .page-content {
+        height: calc(100vh - 44px);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+
+      .table-fixed-wrap {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow: hidden;
+      }
+
+      .table-fixed-wrap .table {
+        margin-bottom: 0 !important;
       }
       .search-bar {
         background-color: #ffff00;
@@ -156,6 +180,15 @@
         border-color: #ced4da !important;
         box-shadow: none !important;
       }
+
+      .order-footer {
+        margin-top: auto;
+        padding-bottom: 8px;
+        padding-top: 6px;
+        border-top: 1px solid #6f6f6f;
+        font-size: 0.9rem;
+        color: #555;
+      }
     </style>
   </head>
   <body>
@@ -168,7 +201,7 @@
       <button class="btn-logout" id="logoutLink">Đăng xuất</button>
     </div>
 
-    <div class="container-fluid px-3">
+    <div class="container-fluid px-3 page-content">
       <h1 class="fs-4 fw-bold mb-2">Danh sách sản phẩm</h1>
 
       <!-- Search bar: dùng form GET, submit tự build URL, reset page=1 -->
@@ -305,49 +338,51 @@
       </div>
 
       <!-- Table -->
-      <table class="table table-bordered mb-2">
-        <thead>
-          <tr>
-            <th style="width: 6%">No.</th>
-            <th style="width: 13%">Hình ảnh</th>
-            <th style="width: 22%">Tên sản phẩm</th>
-            <th style="width: 45%">Mô tả</th>
-            <th style="width: 14%">Số lượng</th>
-          </tr>
-        </thead>
-        <tbody id="productTbody">
-          <tr th:each="product, stat : ${products}">
-            <td th:text="${stat.index + 1 + (currentPage - 1) * pageSize}"></td>
-            <td>
-              <img
-                th:if="${product.productImg != null}"
-                th:src="${product.productImg}"
-                alt="img"
-              />
-            </td>
-            <td th:text="${product.productName}"></td>
-            <td th:text="${product.description}"></td>
-            <td>
-              <input
-                type="number"
-                class="form-control form-control-sm qty-input"
-                min="0"
-                th:data-id="${product.productId}"
-                th:data-max="${product.productAmount - (product.orderProductAmount != null ? product.orderProductAmount : 0)}"
-                th:data-order="${product.orderProductAmount != null ? product.orderProductAmount : 0}"
-                th:data-name="${product.productName}"
-                th:data-status="${product.status}"
-                placeholder=""
-              />
-            </td>
-          </tr>
-          <tr th:if="${#lists.isEmpty(products)}">
-            <td colspan="5" class="text-center text-muted py-3">
-              Không tìm thấy sản phẩm nào.
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      <div class="table-fixed-wrap mb-2">
+        <table class="table table-bordered">
+          <thead>
+            <tr>
+              <th style="width: 6%">No.</th>
+              <th style="width: 13%">Hình ảnh</th>
+              <th style="width: 22%">Tên sản phẩm</th>
+              <th style="width: 45%">Mô tả</th>
+              <th style="width: 14%">Số lượng</th>
+            </tr>
+          </thead>
+          <tbody id="productTbody">
+            <tr th:each="product, stat : ${products}">
+              <td th:text="${stat.index + 1 + (currentPage - 1) * pageSize}"></td>
+              <td>
+                <img
+                  th:if="${product.productImg != null}"
+                  th:src="${product.productImg}"
+                  alt="img"
+                />
+              </td>
+              <td th:text="${product.productName}"></td>
+              <td th:text="${product.description}"></td>
+              <td>
+                <input
+                  type="number"
+                  class="form-control form-control-sm qty-input"
+                  min="0"
+                  th:data-id="${product.productId}"
+                  th:data-max="${product.productAmount - (product.orderProductAmount != null ? product.orderProductAmount : 0)}"
+                  th:data-order="${product.orderProductAmount != null ? product.orderProductAmount : 0}"
+                  th:data-name="${product.productName}"
+                  th:data-status="${product.status}"
+                  placeholder=""
+                />
+              </td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(products)}">
+              <td colspan="5" class="text-center text-muted py-3">
+                Không tìm thấy sản phẩm nào.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
 
       <!-- Đặt hàng -->
       <div class="d-flex align-items-center gap-3">
@@ -361,6 +396,8 @@
         </button>
         <span id="statusText" class="text-danger fw-bold"></span>
       </div>
+
+      <div class="order-footer">Copyright by @hmu</div>
     </div>
 
     <!-- Move script logic to separated js file -->

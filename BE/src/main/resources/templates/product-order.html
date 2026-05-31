@@ -3,66 +3,727 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Xác nhận đặt hàng</title>
+    <title>Thông tin đặt hàng</title>
 
     <link rel="stylesheet" th:href="@{/css/style.css}" />
     <link rel="stylesheet" th:href="@{/bootstrap/css/bootstrap.min.css}" />
     <script defer th:src="@{/bootstrap/js/bootstrap.bundle.min.js}"></script>
 
     <style>
-      body { background-color: #a8e6ef !important; }
-      .container-order { background-color: #ffffff; padding: 20px; border-radius: 8px; margin-top: 50px; }
-      .btn-order-confirm { background-color: #28a745; color: #fff; }
-      .btn-order-cancel { background-color: #dc3545; color: #fff; }
+      :root {
+        --page-bg: #a8e6ef;
+        --section-green: #4ef02f;
+        --input-border: #d7d7d7;
+        --button-bg: #d8d8d8;
+        --text-dark: #313131;
+        --danger: #f06a6a;
+      }
+
+      html,
+      body {
+        min-height: 100%;
+      }
+
+      body {
+        margin: 0;
+        background: var(--page-bg) !important;
+        color: var(--text-dark);
+        font-family: Arial, Helvetica, sans-serif;
+      }
+
+      .order-page {
+        min-height: 100vh;
+        padding: 8px 20px 10px;
+        box-sizing: border-box;
+      }
+
+      .order-topbar {
+        display: flex;
+        justify-content: flex-end;
+        gap: 28px;
+        align-items: center;
+        font-size: 0.95rem;
+        margin-bottom: 8px;
+      }
+
+      .order-greeting {
+        color: var(--danger);
+      }
+
+      .order-logout {
+        color: #000;
+        text-decoration: underline;
+      }
+
+      .order-title {
+        font-size: 1rem;
+        font-weight: 700;
+        margin: 0 0 8px;
+      }
+
+      .order-section-title {
+        background: var(--section-green);
+        padding: 4px 12px;
+        font-size: 0.95rem;
+        font-weight: 700;
+        margin: 0 0 10px;
+      }
+
+      .order-form {
+        margin-bottom: 10px;
+      }
+
+      .order-form-row {
+        display: grid;
+        grid-template-columns: 150px 1fr;
+        align-items: center;
+        gap: 14px;
+        margin-bottom: 8px;
+        max-width: 640px;
+      }
+
+      .order-form-row label {
+        font-size: 0.95rem;
+      }
+
+      .order-form-row input {
+        height: 26px;
+        border: 1px solid var(--input-border);
+        border-radius: 0;
+        padding: 0 10px;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+        background: #fff;
+        color: #333;
+      }
+
+      .order-name {
+        width: 210px;
+      }
+
+      .order-address {
+        width: 320px;
+      }
+
+      .order-date {
+        width: 140px;
+      }
+
+      .order-status {
+        display: block;
+        margin-top: 10px;
+        min-height: 1.2em;
+        color: #b10000;
+        font-weight: 700;
+      }
+
+      .order-table-wrap {
+        background: #fff;
+        border: 1px solid #d8d8d8;
+        min-height: 0;
+        overflow: hidden;
+      }
+
+      .order-table {
+        width: 100%;
+        border-collapse: collapse;
+        table-layout: fixed;
+      }
+
+      .order-table thead th {
+        background: var(--section-green);
+        font-weight: 700;
+        font-size: 0.9rem;
+        padding: 6px 8px;
+        border: none;
+      }
+
+      .order-table tbody td {
+        border: none;
+        padding: 6px 8px;
+        vertical-align: top;
+        color: #333;
+        font-size: 0.92rem;
+      }
+
+      .col-no {
+        width: 56px;
+      }
+
+      .col-img {
+        width: 58px;
+        text-align: center;
+      }
+
+      .col-name {
+        width: 190px;
+      }
+
+      .col-type {
+        width: 120px;
+      }
+
+      .col-desc {
+        width: auto;
+      }
+
+      .col-qty {
+        width: 80px;
+        text-align: center;
+      }
+
+      .product-thumb {
+        width: 28px;
+        height: 28px;
+        background: #f6f6f6;
+        border: 1px solid #eee;
+        margin: 0 auto;
+      }
+
+      .product-img {
+        display: block;
+        width: 28px;
+        height: 28px;
+        object-fit: cover;
+        margin: 0 auto;
+      }
+
+      .order-empty {
+        padding: 14px 10px;
+        text-align: center;
+        color: #666;
+      }
+
+      .order-qty-input {
+        width: 58px;
+        height: 24px;
+        border: 1px solid #c7c7c7;
+        background: #fff;
+        text-align: center;
+      }
+
+      .order-qty-input.is-invalid {
+        border-color: #d9534f;
+        box-shadow: 0 0 0 1px rgba(217, 83, 79, 0.2);
+      }
+
+      .order-actions {
+        display: flex;
+        gap: 26px;
+        margin-top: 10px;
+      }
+
+      .order-footer {
+        margin-top: 10px;
+        padding-top: 6px;
+        border-top: 1px solid #6f6f6f;
+        font-size: 0.9rem;
+        color: #555;
+      }
+
+      /* Error popup style (red) */
+      .error-popup {
+        display: none;
+        position: absolute;
+        right: 20px;
+        top: 48px;
+        background: #e21717;
+        color: #fff;
+        padding: 10px 14px;
+        border-radius: 4px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        z-index: 1200;
+        min-width: 240px;
+        max-width: 420px;
+      }
+
+      .error-popup.show {
+        display: block;
+        animation: popupIn 220ms ease-out;
+      }
+
+      .error-popup .close-btn {
+        float: right;
+        margin-left: 8px;
+        color: rgba(255,255,255,0.9);
+        cursor: pointer;
+        font-weight: 700;
+      }
+
+      @keyframes popupIn {
+        from { transform: translateY(-6px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+      }
+
+      .order-btn {
+        min-width: 76px;
+        height: 32px;
+        border: 1px solid #bdbdbd;
+        background: var(--button-bg);
+        color: #333;
+        padding: 0 14px;
+        border-radius: 0;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+      }
+
+      .order-btn:hover {
+        filter: brightness(0.98);
+      }
+
+      @media (max-width: 768px) {
+        .order-page {
+          padding: 12px 16px 20px;
+        }
+
+        .order-topbar {
+          flex-wrap: wrap;
+          justify-content: flex-start;
+          gap: 12px;
+        }
+
+        .order-form-row {
+          grid-template-columns: 1fr;
+          max-width: 100%;
+          gap: 6px;
+        }
+
+        .order-name,
+        .order-address,
+        .order-date {
+          width: 100%;
+        }
+
+        .order-table-wrap {
+          overflow-x: auto;
+        }
+
+        .order-table {
+          min-width: 760px;
+        }
+      }
     </style>
   </head>
   <body>
-    <div class="container container-order shadow-sm">
-      <h3 class="mb-4">Xác nhận đặt hàng</h3>
-      
-      <p>Bạn đã chọn các sản phẩm sau (Dữ liệu giỏ tạm thời):</p>
-      
-      <div id="cartItems" class="mb-4">
-        <!-- Chèn tóm tắt sản phẩm bằng JS nếu cần -->
+    <div class="order-page">
+      <div id="errorPopup" class="error-popup" role="alert" aria-live="assertive" aria-atomic="true" style="display:none;">
+        <span id="errorPopupClose" class="close-btn">×</span>
+        <div id="errorPopupText"></div>
       </div>
-      
-      <div class="d-flex gap-3">
-        <button id="btnOrderConfirm" class="btn btn-order-confirm">Đặt hàng</button>
-        <button id="btnOrderCancel" class="btn btn-order-cancel">Cancel</button>
+      <div class="order-topbar">
+        <span class="order-greeting">
+          Xin chào: <strong id="helloUser">abc-xyz</strong>
+        </span>
+        <span id="displayName">Nguyễn Văn A</span>
+        <a href="#" class="order-logout" id="logoutLink">Đăng xuất</a>
       </div>
+
+      <h1 class="order-title">Thông tin đặt hàng</h1>
+
+      <div class="order-section-title">Thông tin người đặt hàng</div>
+
+      <form class="order-form" autocomplete="off" onsubmit="return false;">
+        <div class="order-form-row">
+          <label for="orderName">Người đặt hàng</label>
+          <input id="orderName" class="order-name" type="text" maxlength="200" />
+        </div>
+        <div class="order-form-row">
+          <label for="orderAddress">Địa chỉ giao hàng</label>
+          <input id="orderAddress" class="order-address" type="text" maxlength="400" />
+        </div>
+        <div class="order-form-row">
+          <label for="orderDate">Ngày giao hàng</label>
+          <input id="orderDate" class="order-date" type="text" maxlength="10" placeholder="YYYY/MM/DD" />
+        </div>
+      </form>
+
+      <div class="order-section-title">Danh sách sản phẩm</div>
+
+      <div class="order-table-wrap">
+        <table class="order-table">
+          <thead>
+            <tr>
+              <th class="col-no">No.</th>
+              <th class="col-img">Hình ảnh</th>
+              <th class="col-name">Tên sản phẩm</th>
+              <th class="col-type">Loại sản phẩm</th>
+              <th class="col-desc">Mô tả</th>
+              <th class="col-qty">Số lượng</th>
+            </tr>
+          </thead>
+          <tbody id="cartItemsBody">
+            <tr>
+              <td class="order-empty" colspan="6">Đang tải dữ liệu sản phẩm...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="order-actions">
+        <button id="btnOrderConfirm" class="order-btn" type="button">Đặt hàng</button>
+        <button id="btnOrderCancel" class="order-btn" type="button">Cancel</button>
+      </div>
+
+      <span id="statusText" class="order-status"></span>
+
+      <div class="order-footer">Copyright by @hmu</div>
     </div>
 
     <script>
-      // Load thử ra UI một thông báo nhỏ (nếu cần hiển thị)
-      const storedCart = JSON.parse(sessionStorage.getItem('cartQty') || '{}');
-      const cartDiv = document.getElementById('cartItems');
-      const ids = Object.keys(storedCart);
-      
-      if (ids.length === 0) {
-        cartDiv.innerHTML = '<p class="text-danger">Không có sản phẩm nào trong giỏ!</p>';
-      } else {
-        cartDiv.innerHTML = '<ul>' + ids.map(id => '<li>Product ID: ' + id + ' | Số lượng: ' + storedCart[id] + '</li>').join('') + '</ul>';
+      function getAccessToken() {
+        return localStorage.getItem('accessToken') || '';
       }
 
-      // Xử lý xác nhận đặt hàng
-      document.getElementById('btnOrderConfirm').addEventListener('click', function() {
-        // Thực tế có thể call api /shop/orders/create ở đây.
-        
-        // Reset giỏ nhớ tạm
+      function decodeJwt(token) {
+        try {
+          const parts = String(token || '').split('.');
+          if (parts.length !== 3) return null;
+          const payload = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+          return JSON.parse(atob(payload));
+        } catch {
+          return null;
+        }
+      }
+
+      function getLoginName() {
+        const token = getAccessToken();
+        const claims = decodeJwt(token);
+        return (claims && (claims.preferred_username || claims.username || claims.sub || claims.email)) || '';
+      }
+
+      function formatDateValue(date) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return year + '/' + month + '/' + day;
+      }
+
+      function parseDateText(text) {
+        const match = /^(\d{4})\/(\d{2})\/(\d{2})$/.exec(String(text || '').trim());
+        if (!match) return null;
+        const year = Number(match[1]);
+        const month = Number(match[2]);
+        const day = Number(match[3]);
+        const date = new Date(year, month - 1, day);
+        if (
+          date.getFullYear() !== year ||
+          date.getMonth() !== month - 1 ||
+          date.getDate() !== day
+        ) {
+          return null;
+        }
+        return date;
+      }
+
+      function startOfDay(date) {
+        const copy = new Date(date);
+        copy.setHours(0, 0, 0, 0);
+        return copy;
+      }
+
+      function getSelectedCart() {
+        return JSON.parse(sessionStorage.getItem('cartQty') || '{}');
+      }
+
+      function setStatus(message) {
+        const statusText = document.getElementById('statusText');
+        if (statusText) statusText.textContent = message || '';
+      }
+
+      function showError(message, focusEl) {
+        try {
+          const popup = document.getElementById('errorPopup');
+          const text = document.getElementById('errorPopupText');
+          if (!popup || !text) return;
+          text.innerHTML = message;
+          popup.style.display = 'block';
+          popup.classList.add('show');
+          // optional focus
+          if (focusEl && typeof focusEl.focus === 'function') {
+            try { focusEl.focus(); } catch (e) {}
+          }
+          // auto hide after 6s
+          if (popup._hideTimer) clearTimeout(popup._hideTimer);
+          popup._hideTimer = setTimeout(function() { popup.classList.remove('show'); popup.style.display = 'none'; }, 6000);
+        } catch (e) {
+          // fallback
+          setStatus(message);
+        }
+      }
+
+      function focusAndStop(input, message) {
+        showError(message, input);
+        if (input) {
+          try { input.focus(); } catch (e) {}
+          if (typeof input.select === 'function') input.select();
+        }
+      }
+
+      async function loadProducts() {
+        const response = await fetch('/api/test/products?page=1&size=1000&name=&type=&desc=', {
+          credentials: 'same-origin'
+        });
+
+        if (!response.ok) {
+          throw new Error('Không thể tải danh sách sản phẩm');
+        }
+
+        return response.json();
+      }
+
+      function buildCartRows() {
+        const cartBody = document.getElementById('cartItemsBody');
+        const storedCart = getSelectedCart();
+        const productIds = Object.keys(storedCart);
+
+        if (!productIds.length) {
+          cartBody.innerHTML = '<tr><td class="order-empty" colspan="6">Không có sản phẩm trong giỏ</td></tr>';
+          return;
+        }
+
+        cartBody.innerHTML = productIds
+          .map(function (productId, index) {
+            return [
+              '<tr>',
+              '<td>' + (index + 1) + '</td>',
+              '<td><div class="product-thumb"></div></td>',
+              '<td>&nbsp;</td>',
+              '<td>&nbsp;</td>',
+              '<td>&nbsp;</td>',
+              '<td class="col-qty">' + storedCart[productId] + '</td>',
+              '</tr>'
+            ].join('');
+          })
+          .join('');
+      }
+
+      function getDeliveryDateInputValue() {
+        const today = formatDateValue(new Date());
+        return today;
+      }
+
+      function buildSelectedProducts(allProducts, storedCart) {
+        const selectedIds = new Set(Object.keys(storedCart).map(String));
+        return allProducts
+          .filter(function (product) {
+            return selectedIds.has(String(product.productId));
+          })
+          .map(function (product, index) {
+            const orderedQty = Number(storedCart[String(product.productId)] || 0);
+            const available = Math.max(0, Number(product.productAmount || 0) - Number(product.orderProductAmount || 0));
+            return {
+              index: index + 1,
+              productId: product.productId,
+              productName: product.productName || '',
+              producttypeName: product.producttypeName || '',
+              description: product.description || '',
+              productImg: product.productImg || '',
+              orderedQty: orderedQty,
+              available: available
+            };
+          });
+      }
+
+      function renderSelectedProducts(selectedProducts) {
+        const cartBody = document.getElementById('cartItemsBody');
+        if (!selectedProducts.length) {
+          cartBody.innerHTML = '<tr><td class="order-empty" colspan="6">Không có sản phẩm trong giỏ</td></tr>';
+          return;
+        }
+
+        cartBody.innerHTML = selectedProducts
+          .map(function (product) {
+            return [
+              '<tr>',
+              '<td>' + product.index + '</td>',
+              '<td class="img-cell">',
+              product.productImg ? '<img class="product-img" src="' + product.productImg + '" alt="' + product.productName + '" />' : '<div class="product-thumb"></div>',
+              '</td>',
+              '<td>' + product.productName + '</td>',
+              '<td>' + product.producttypeName + '</td>',
+              '<td>' + product.description + '</td>',
+              '<td class="col-qty">',
+              '<input',
+              ' type="number"',
+              ' class="order-qty-input"',
+              ' min="1"',
+              ' value="' + product.orderedQty + '"',
+              ' readonly',
+              ' data-product-id="' + product.productId + '"',
+              ' data-product-name="' + product.productName.replace(/"/g, '&quot;') + '"',
+              ' data-available="' + product.available + '"',
+              ' />',
+              '</td>',
+              '</tr>'
+            ].join('');
+          })
+          .join('');
+      }
+
+      async function initializePage() {
+        const token = getAccessToken();
+        const claims = decodeJwt(token);
+        const helloUser = document.getElementById('helloUser');
+        const displayName = document.getElementById('displayName');
+        const orderName = document.getElementById('orderName');
+        const orderAddress = document.getElementById('orderAddress');
+        const orderDate = document.getElementById('orderDate');
+
+        const loginName = getLoginName();
+        const customName = (claims && (claims.name || claims.preferred_username || claims.username)) || loginName || 'Nguyễn Văn A';
+
+        if (helloUser) helloUser.textContent = loginName || 'abc-xyz';
+        if (displayName) displayName.textContent = customName;
+        if (orderName) orderName.value = customName;
+        if (orderAddress) orderAddress.value = '';
+        if (orderDate) orderDate.value = getDeliveryDateInputValue();
+
+        const storedCart = getSelectedCart();
+        const loadingRow = document.querySelector('#cartItemsBody td.order-empty');
+        if (loadingRow) loadingRow.textContent = 'Đang tải dữ liệu sản phẩm...';
+
+        try {
+          const allProducts = await loadProducts();
+          const selectedProducts = buildSelectedProducts(Array.isArray(allProducts) ? allProducts : [], storedCart);
+          renderSelectedProducts(selectedProducts);
+        } catch (error) {
+          const cartBody = document.getElementById('cartItemsBody');
+          cartBody.innerHTML = '<tr><td class="order-empty" colspan="6">Không thể tải dữ liệu sản phẩm</td></tr>';
+          setStatus(error instanceof Error ? error.message : 'Không thể tải dữ liệu sản phẩm');
+        }
+      }
+
+      async function submitBatchOrder() {
+        setStatus('');
+
+        const orderName = document.getElementById('orderName');
+        const orderAddress = document.getElementById('orderAddress');
+        const orderDate = document.getElementById('orderDate');
+        const qtyInputs = Array.from(document.querySelectorAll('.order-qty-input'));
+        const storedCart = getSelectedCart();
+
+        const customName = String(orderName.value || '').trim();
+        if (!customName) {
+          focusAndStop(orderName, 'Tên người dùng không được để trống');
+          return;
+        }
+
+        const deliveryAddress = String(orderAddress.value || '').trim();
+        if (!deliveryAddress) {
+          focusAndStop(orderAddress, 'Địa chỉ giao hàng không được để trống');
+          return;
+        }
+
+        const deliveryDateText = String(orderDate.value || '').trim();
+        const deliveryDate = parseDateText(deliveryDateText);
+        if (!deliveryDate) {
+          focusAndStop(orderDate, 'Ngày giao hàng không đúng định dạng YYYY/MM/DD hoặc không hợp lệ');
+          return;
+        }
+
+        const today = startOfDay(new Date());
+        if (startOfDay(deliveryDate).getTime() < today.getTime()) {
+          focusAndStop(orderDate, 'Ngày giao hàng không được nhỏ hơn ngày hiện tại');
+          return;
+        }
+
+        if (!qtyInputs.length) {
+          setStatus('Không có sản phẩm trong giỏ');
+          return;
+        }
+
+        const selectedProducts = qtyInputs.map(function (input) {
+          return {
+            productId: Number(input.dataset.productId),
+            productName: input.dataset.productName || '',
+            available: Number(input.dataset.available || 0),
+            qty: Number(input.value || 0),
+            input: input
+          };
+        });
+
+        for (const item of selectedProducts) {
+          if (!Number.isInteger(item.qty) || item.qty < 1) {
+            focusAndStop(item.input, 'Số lượng phải là số nguyên lớn hơn 0');
+            return;
+          }
+
+          if (item.qty > item.available) {
+            focusAndStop(
+              item.input,
+              'Số lượng của ' + item.productName + ' không đủ, hãy nhập số lượng ' + item.available
+            );
+            return;
+          }
+        }
+
+        const payload = {
+          customName: customName,
+          orderDeliveryAddress: deliveryAddress,
+          orderDeliveryDate: deliveryDateText,
+          actorUsername: getLoginName(),
+          items: selectedProducts.map(function (item) {
+            return {
+              orderProductId: item.productId,
+              orderProductAmount: item.qty
+            };
+          })
+        };
+
+        const response = await fetch('/shop/orders/create-batch', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const responseBody = await response.json().catch(function () {
+          return null;
+        });
+
+        if (!response.ok) {
+          const message = responseBody && (responseBody.message || responseBody.error || responseBody.detail);
+          throw new Error(message || 'Đặt hàng thất bại');
+        }
+
         sessionStorage.removeItem('cartQty');
         sessionStorage.removeItem('lastSearchUrl');
-        
-        alert("Đặt hàng thành công!");
-        
-        // Trở về trang danh sách và reset điều kiện search (về trắng)
+        alert('Đã đặt hàng thành công');
         window.location.href = '/shop/product-list';
-      });
+      }
 
-      // Xử lý Hủy
-      document.getElementById('btnOrderCancel').addEventListener('click', function() {
-        // Trở lại đúng đường dẫn đã tìm kiếm (giữ nguyên thanh search và session số lượng)
-        const lastUrl = sessionStorage.getItem('lastSearchUrl') || '';
-        window.location.href = '/shop/product-list' + lastUrl;
+      document.addEventListener('DOMContentLoaded', function () {
+        initializePage();
+        // close button for popup
+        const errClose = document.getElementById('errorPopupClose');
+        const errPopup = document.getElementById('errorPopup');
+        if (errClose && errPopup) {
+          errClose.addEventListener('click', function () {
+            errPopup.classList.remove('show');
+            errPopup.style.display = 'none';
+          });
+        }
+
+        document.getElementById('btnOrderConfirm').addEventListener('click', function () {
+          submitBatchOrder().catch(function (error) {
+            showError(error instanceof Error ? error.message : 'Đặt hàng thất bại');
+          });
+        });
+
+        document.getElementById('btnOrderCancel').addEventListener('click', function () {
+          const confirmLeave = window.confirm('Bạn có muốn thoát trang này');
+          if (!confirmLeave) return;
+
+          const lastUrl = sessionStorage.getItem('lastSearchUrl') || '';
+          window.location.href = '/shop/product-list' + lastUrl;
+        });
+
+        document.getElementById('logoutLink').addEventListener('click', function (event) {
+          event.preventDefault();
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('refreshToken');
+          window.location.href = '/';
+        });
       });
     </script>
   </body>

@@ -2,6 +2,7 @@ package com.example.Trello_Mini.controller.Shop;
 
 import com.example.Trello_Mini.common.ApiResponse;
 import com.example.Trello_Mini.common.ApiResponses;
+import com.example.Trello_Mini.dto.request.Shop.OrderBatchCreationRequest;
 import com.example.Trello_Mini.dto.request.Shop.OrderCreationRequest;
 import com.example.Trello_Mini.dto.request.Shop.OrderUpdateRequest;
 import com.example.Trello_Mini.dto.response.Shop.OrderResponse;
@@ -33,6 +34,12 @@ public class OrderController {
     @PostMapping("/create")
     public ResponseEntity<ApiResponse<OrderResponse>> create(@Valid @RequestBody OrderCreationRequest request, HttpServletRequest httpReq) {
         return ApiResponses.created(httpReq, orderService.create(request));
+    }
+
+    @PostMapping("/create-batch")
+    public ResponseEntity<ApiResponse<List<OrderResponse>>> createBatch(
+            @Valid @RequestBody OrderBatchCreationRequest request, HttpServletRequest httpReq) {
+        return ApiResponses.created(httpReq, orderService.createBatch(request));
     }
 
     @PutMapping("/{id}/update")
