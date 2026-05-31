@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Thông tin đặt hàng</title>
 
-    <link rel="stylesheet" th:href="@{/css/style.css}" />
+    <!-- <link rel="stylesheet" th:href="@{/css/style.css}" /> -->
     <link rel="stylesheet" th:href="@{/bootstrap/css/bootstrap.min.css}" />
     <script defer th:src="@{/bootstrap/js/bootstrap.bundle.min.js}"></script>
 
@@ -300,6 +300,113 @@
           min-width: 760px;
         }
       }
+      /* Inlined rules from /static/css/style.css (uncommented) */
+
+      /* page container and topbar */
+      .page-container {
+        min-height: 100vh;
+        padding: 18px 24px 60px 24px;
+        box-sizing: border-box;
+      }
+
+      .topbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 12px;
+      }
+
+      .topbar-right {
+        display: flex;
+        gap: 22px;
+        align-items: center;
+        font-size: 1rem;
+      }
+
+      .topbar-greeting {
+        color: #cc0000;
+      }
+
+      .topbar-name {
+        color: #111;
+      }
+
+      .topbar-logout {
+        color: #111;
+        text-decoration: underline;
+      }
+
+      /* search / pagination / table utilities reused across pages */
+      .search-row input,
+      .search-row select {
+        height: 28px;
+        border: 1px solid #ccc;
+        border-radius: 3px;
+        padding: 2px 6px;
+        box-sizing: border-box;
+      }
+
+      .pager-btn {
+        min-width: 44px;
+        height: 32px;
+        border: none;
+        border-radius: 3px;
+        background: #d9d9d9;
+        cursor: pointer;
+      }
+
+      .pager-btn.disabled {
+        opacity: 0.5;
+        cursor: default;
+        pointer-events: none;
+      }
+
+      .product-table {
+        width: 100%;
+        border-collapse: collapse;
+        background: #fff;
+      }
+
+      .product-table th,
+      .product-table td {
+        border: 2px solid #0b0b0b;
+        padding: 10px 10px;
+        vertical-align: top;
+      }
+
+      .product-table thead th {
+        background: #3cff3c;
+        font-weight: normal;
+      }
+
+      .col-no { width: 70px; }
+      .col-img { width: 140px; }
+      .col-name { width: 220px; }
+      .col-qty { width: 140px; }
+
+      .img-cell { text-align: center; }
+
+      .product-img { width: 90px; height: 60px; object-fit: cover; background: #f2f2f2; }
+
+      .empty-cell { text-align: center; padding: 22px 10px; color: #333; }
+
+      .page-actions { margin-top: 16px; display: flex; align-items: center; gap: 16px; }
+      .action-btn { padding: 8px 18px; border: none; border-radius: 3px; background: #d9d9d9; cursor: pointer; }
+
+      .status-text { font-size: 0.95rem; color: #222; }
+
+      .footer {
+        position: fixed;
+        left: 0;
+        bottom: 0;
+        width: 100%;
+        text-align: left;
+        padding: 10px 0 5px 20px;
+        font-size: 1rem;
+        color: #222;
+        border-top: 2px solid #222;
+      }
+
     </style>
   </head>
   <body>
