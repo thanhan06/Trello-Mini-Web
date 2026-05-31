@@ -46,7 +46,7 @@ Nếu bị bắt buộc phải dùng MAX (không khuyến nghị), chỉ có hai
 
 Kết luận: tránh `MAX+1`. Dùng sequence/identity hoặc tạo counter DB là giải pháp đúng. Nếu muốn, tôi sẽ mô tả cách chuyển từ MAX→sequence hoặc cài sequence trong DB cho bạn. Bạn muốn tiếp theo: “Thêm sequence” hay “Mô tả cách khoá an toàn với MAX (không khuyến nghị)”?
 
-
+======================================================================================
 Optimized tool selectionVì `MAX(id) + 1` phải đọc số lớn nhất hiện có rồi tự cộng thêm, nên nếu có 2 người đặt cùng lúc, cả hai có thể nhìn thấy cùng một số lớn nhất và sinh ra cùng một `id`. Kết quả là dễ bị trùng khóa, lỗi lưu dữ liệu, và càng nhiều người dùng thì càng dễ lỗi hơn.
 
 `SEQUENCE` thì khác: database tự cấp số mới theo cơ chế nguyên tử, mỗi lần gọi là ra một `id` riêng, không bị đụng nhau dù có nhiều request đồng thời. Vì vậy nó an toàn hơn, nhanh hơn, và đúng với cách JPA/Spring thường dùng để sinh khóa chính.
